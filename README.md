@@ -363,3 +363,21 @@ misc.php?action=postingreminder
 # Automatische Archivierung
 
 # PDF-Export
+
+# Demo
+### ACP
+<img src="https://stormborn.at/plugins/inplayscenes_acp_overview.png">
+<img src="https://stormborn.at/plugins/inplayscenes_acp_add.png">
+<img src="https://stormborn.at/plugins/inplayscenes_acp_select.png">
+
+### Individuelle Szenenübersicht
+<img src="https://stormborn.at/plugins/inplayscenes_user.png">
+
+### Übersicht aller Inplayszenen
+<img src="https://stormborn.at/plugins/inplayscenes_all.png">
+
+### Übersicht der Posting-Erinnerung
+<img src="https://stormborn.at/plugins/inplayscenes_reminder.png">
+
+### Profile
+<img src="https://stormborn.at/plugins/inplayscenes_profile.png">
