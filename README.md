@@ -1,2 +1,24 @@
-# inplayscenes
-Bietet die Möglichkeit die Inplayszenen vom Forum dynamisch zu verwalten.
+# Inplayszenen-Manager
+Das Inplayszenen-Manager Plugin bietet ein umfassendes Tool zur Verwaltung von Inplayszenen. Es hilft dabei, Szenen übersichtlich zu strukturieren, um so den Überblick über (laufende) Szenen zu behalten. Durch die Nutzung dieses Plugins wird das Erstellen und Verwalten von Szenen wesentlich vereinfacht, indem wichtige Informationen wie Datum, teilnehmende Charaktere und individuelle Felder, welche erstellt werden könne im ACP erfasst werden. Das Plugin unterstützt und unterscheidet sowohl den normalen Inplaybereich sowie den Bereich für alternative Universen (AU) Szenen. Es besteht die Möglichkeit, Szenen in verschiedene Typen zu unterteilen: private Szenen, in denen nur bestimmte Charaktere teilnehmen dürfen, Szenen mit Absprache, bei denen eine Teilnahme nach Genehmigung erfolgt, sowie offene Szenen, in die sich jeder Charakter mit einem Klick hinzufügen kann. Zusätzlich kann für jede Szene eine Postingreihenfolge festgelegt werden. Es wird unterschieden zwischen Szenen mit fester Reihenfolge, bei denen die Teilnehmer in einer definierten Reihenfolge posten müssen, und solchen ohne feste Reihenfolge, bei denen das Posten freier erfolgt.<br>
+<br>
+Im Profil jedes Charakters werden alle bisherigen Szenen chronologisch aufgelistet. Hierbei wird zwischen Inplay- und AU-Szenen unterschieden, um eine klare Trennung zu erzielen. Szenen, in denen nur noch ein bestehender Charakter vorhanden ist, können als "nicht relevant" markiert werden, um die Übersichtlichkeit zu wahren, ohne die Szene komplett löschen zu müssen.<br>
+<br>
+Das Plugin beitet zudem eine persönliche Übersicht über die aktiven Szenen. Diese Übersicht zeigt auf, in welchen Szenen welcher Charakter als nächstes posten muss.<br>
+Mitglieder:innen können eine individuelle Posting-Erinnerung festlegen, die sie nach einer selbst festgelegten Anzahl von Tagen darauf hinweist, welchen Szenen schon länger unbeantwortet wartet. Diese Erinnerung ist zusätzlich pro Charakter einstellbar. Genauso können Mitglieder:innen individuell entscheiden, wie sie über Inplayereignisse informiert werden wollen. Entweder per Private Nachricht oder MyAlerts, wenn das Forum diese Möglichkeit unterstützt.<br>
+<br>
+Bei Account Löschung werden betroffene Inplayszenen entsprechend in das Archiv verschoben. Zusätzlich kann das das automatische Archivieren von inaktiven Szenen eingestellt werden. Szenen, die über eine definierte Zeitspanne hinweg keine Aktivität zeigen (z.B. nach X Monaten ohne neuen Post), werden automatisch ins Archiv verschoben. 
+
+# Wichtige Funktionen im Überblick
+- <b>Individuelle Szenenfelder:</b> Im Admin-CP können benutzerdefinierte Felder für Szenen erstellt werden (z.B. für Ort, Tageszeit).
+- <b>Inplay- und AU-Kategorisierung:</b> Das Plugin trennt Szenen klar nach Inplay- und AU-Bereichen. Zusätzlich können einzelne Foren innerhalb des Inplaybereichs ausgeschlossen werden.
+- <b>Szenenarten:</b> Szenen können privat, nach Absprache oder offen sein, was unterschiedliche Teilnahmebedingungen für die Charaktere ermöglicht. (In den Einstellungen aktivierbar.) Bei offenen Szenen können sich Mitglieder:innen per Klick mit ihren Charakteren der Szene hinzufügen. 
+- <b>Szeneninformationen im Forumdisplay und Thread:</b> Die Informationen zur Szene werden im Forumdisplay, Showthread und Postbit angezeigt, sofern diese Option aktiviert ist. Es gibt jeweils eine kompakte Variable oder können jeweils einzeln angesprochen werden.
+- <b>Bearbeitungsmöglichkeiten:</b> Alle in einer Szene eingetragenen Charaktere können die Szeneninformationen nachträglich bearbeiten.
+- <b>Individuelle Szenenübersicht:</b> Jedes Mitglied hat Zugriff auf eine eigene Übersicht der eigenen aktiven Szenen und kann leicht nachverfolgen, in welchen Szenen wer als Nächstes posten muss.
+- <b>Übersicht aller Inplayszenen:</b> Das Plugin bietet eine zentrale Übersicht aller Inplayszenen des Forums, die mit verschiedenen Filtern (z.B. nach Bereich, Szenenstatus, Charakteren, Spieler:innen) durchsucht und gefiltert werden kann.
+- <b>Posting-Erinnerungen:</b> Mitglied:innern können individuelle Erinnerungen einstellen, die nach einer bestimmten Zeitspanne Benachrichtigungen auslösen, falls sie in einer Szene posten müssen.
+- <b>Relevanzstatus:</b> Szenen, in denen nur noch ein aktiver Charakter existiert, können als "nicht relevant" markiert werden, wenn sie nicht mehr fortgesetzt werden (z.B. bei Löschung von Postpartner:innen oder Szenenabbruch), ohne dass sie gelöscht werden müssen.
+- <b>PDF-Export:</b> Szenen oder einzelne Inplay-Posts können als PDF-Dateien heruntergeladen und archiviert werden.
+- <b>Automatische Archivierung bei Account löschung:</b> Szenen, bei den ein teilnehmdender Charakter gelöscht wird, werden automatisch ins Archiv verschoben. 
+- <b>Automatische Archivierung von inaktiven Szenen:</b> Szenen, die länger keine Aktivität zeigen, werden automatisch ins Archiv verschoben. Funktion kann vom Team deaktiviert werden.
+- <b>Benachrichtigungen:</b> Mitglieder:innen können wählen, ob sie Benachrichtigungen über MyAlerts oder private Nachrichten erhalten möchten.
