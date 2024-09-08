@@ -26,6 +26,60 @@ Bei Account Löschung werden betroffene Inplayszenen entsprechend in das Archiv 
 # Vorrausetzung
 - Der <a href="https://www.mybb.de/erweiterungen/18x/plugins-verschiedenes/enhanced-account-switcher/" target="_blank">Accountswitcher</a> von doylecc <b>muss</b> installiert sein.
 
+# Individuelle Szenenfelder
+Dieses Plugin bietet maximale Flexibilität, indem nur die Felder für Charaktere und Datum sowie optional für Triggerwarnungen fest vordefiniert sind. Alle weiteren Felder können vom Team im ACP individuell erstellt werden, um den Anforderungen des Forums gerecht zu werden. Jedes Szenenfeld erhält dabei einen eindeutigen Identifikator, der keine Sonderzeichen oder Leerzeichen enthalten darf, um maschinenlesbar zu sein.<br>
+Die Feldtypen können frei gewählt werden (ähnlich wie bei den Profilfeldern), sodass verschiedene Eingabeformate (z.B. Textfelder, Auswahlfelder) möglich sind. Zusätzlich lässt sich festlegen, ob ein Feld verpflichtend ausgefüllt werden muss und ob es nach der Erstellung noch bearbeitet werden kann.
+
+# Szeneninformationen im Forumdisplay und Thread
+Das Plugin bietet die Möglichkeit, Szeneninformationen in verschiedenen Bereichen des Forums anzuzeigen: im Forumdisplay (Template "forumdisplay_thread"), im Showthread (Template "showthread") sowie im Postbit (Templates "postbit" und "postbit_classic"). Während die Anzeige im Forumdisplay standardmäßig aktiviert ist, müssen die Optionen für Showthread und Postbit über die Einstellungen separat aktiviert werden.<br>
+<bR>
+Für alle drei Templates gibt es eine kompakte Variable, die eine schlichte Ausgabe der Szeneninformationen ermöglicht. Das Team kann die entsprechenden Templates anpassen, um die gewünschten Informationen darzustellen. Sie können jedoch auch direkt angesprochen werden und entweder in das Template für die kompakte Variable eingefügt werden oder direkt in die entsprechenden Templates "forumdisplay_thread" (Forumdisplay), "showthread" (Showthread) sowie "postbit" und "postbit_classic" (Postbit), um die Szeneninformationen dort individuell anzuzeigen.
+- {$inplayscene['scenedate']}: Datum der Szene
+- {$inplayscene['partnerusers']}: Teilnehmende Charaktere
+- {$inplayscene['openscene']}: Szenenart
+- {$inplayscene['postorder']}: Postingreihenfolge
+- {$inplayscene['trigger']}: Triggerwarnung (falls aktiviert)
+- {$inplayscene['Identifikator']}: Individuelles Szenenfeld
+Für die Anzeige in den Postbit-Templates muss $inplayscene['Inhalt'] durch $post['Inhalt'] ersetzt werden, um die Szeneninformationen korrekt in die einzelnen Posts zu integrieren.<br>
+<br>
+Wenn die Variablen direkt in die entsprechenden Templates eingefügt werden, kann es vorkommen, dass um die Variablen div-Tags oder ähnliche Elemente gelegt werden, die im Offplay-Bereich leer bleiben und das Design stören könnten. Um dies zu vermeiden, gibt es die Variable <b>{$display_onlyinplay}</b>, die mit einem inline style-Tag (style="display;") arbeitet, um den Inhalt im Offplay-Bereich unsichtbar zu machen. Diese Variable sollte entsprechend eingefügt werden, um eine saubere Darstellung zu gewährleisten.<br>
+Ebenso kann das gleiche Prinzip auf Informationen angewendet werden, die im Offplay angezeigt, jedoch im Inplay ausgeblendet werden sollen. Dafür kann die Variable <b>{$display_offplay}</b> verwendet werden.
+
+# Automatische Archivierung
+Diese Funktion greift in zwei Fällen: bei der Löschung eines Accounts und bei Inaktivität einer Szene.<br>
+1. <b>Archivierung bei Accountlöschung:</b><br>
+Damit die Szenen eines gelöschten Accounts automatisch ins Archiv verschoben werden, muss der Account über das Popup "Optionen" im ACP gelöscht werden. Gehe dazu im ACP auf den Reiter Benutzer & Gruppen > Benutzer, wo alle Benutzer aufgelistet sind. Rechts neben jedem Account befindet sich ein Optionen-Button. Nach dem Drücken dieses Buttons erscheint eine Auswahl an Möglichkeiten. Wählst du die Option zur Löschung des Accounts, werden automatisch alle Szenen des gelöschten Charakters in das entsprechende Archiv verschoben.<br>
+2. <b>Archivierung bei Inaktivität:</b><br>
+Szenen gelten als inaktiv, wenn der letzte Post eine festgelegte Anzahl an Monaten überschritten hat. Diese Funktion kann in den Einstellungen individuell konfiguriert werden. Wird der Wert auf 0 gesetzt, ist die automatische Archivierung wegen Inaktivität deaktiviert.<br>
+<br>
+<b>Hinweis zur Archivierung nach Monaten:</b><br>
+Einige Foren nutzen im Archiv Unterforen nach dem Format "Monatsname Jahr". Diese Struktur wird vom Plugin unterstützt. Aktuell sind deutsche und englische Monatsnamen vorgesehen, aber die Monatsnamen können problemlos erweitert werden. In der Datei inc/plugins und inc/task findest du folgendes Array:<br>
+<blockquote>
+$months = array(
+    '01' => ['January', 'Januar'],
+    '02' => ['February', 'Februar'],
+    '03' => ['March', 'März'],
+    '04' => ['April'],
+    '05' => ['May', 'Mai'],
+    '06' => ['June', 'Juni'],
+    '07' => ['July', 'Juli'],
+    '08' => ['August'],
+    '09' => ['September'],
+    '10' => ['October', 'Oktober'],
+    '11' => ['November'],
+    '12' => ['December', 'Dezember'],
+);
+</blockquote>
+Möchtest du dieses Array erweitern oder ändern, kannst du entweder den Inhalt der Klammern [] ersetzen oder weitere Monatsnamen durch Hinzufügen von , 'Monatsname' vor der schließenden Klammer ergänzen.<br>
+### Wichtiger Hinweis:
+Das Plugin archiviert Szenen nur in diesen zwei Fällen (Accountlöschung und Inaktivität). Für die allgemeine Archivierung von Threads muss weiterhin das <a href="https://github.com/aheartforspinach/Archivierung">Archivierungsplugin</a> von aheartforspinach installiert sein. Eine Anpassung dieses Plugins befindet sich weiter unten in der Dokumentation.
+
+# PDF-Export
+Mit dieser Funktion können alle Mitglieder des Forums einzelne Inplaybeiträge oder ganze Szenen als PDF-Datei abspeichern. Der Titel der Szene wird dabei als Hauptüberschrift im PDF-Dokument verwendet. Die kleinere Überschrift, die unter dem Titel erscheint, kann jedes Team im Template "inplayscenes_pdf_fields" individuell anpassen.<br>
+Standardmäßig werden im PDF nur die Charakternamen und das Szenendatum angezeigt. Das Team kann jedoch zusätzliche Informationen wie individuelle Szenenfelder mit {$inplayscene['Identifikator']}, die Postingreihenfolge mit {$inplayscene['postorder']} oder den Szenentyp mit {$inplayscene['openscene']} integrieren.<br>
+<br>
+<b>Wichtig:</b> Für die PDF-Exportfunktion verwende ich die TCPDF-Bibliothek, die viele HTML-Befehle unterstützt, jedoch nur eingeschränkt CSS-Befehle. Daher sollten nur einfache HTML-Tags wie <br*> oder <b*> verwendet werden, um die Ausgabe korrekt zu gestalten.
+
 # Datenbank-Änderungen
 hinzugefügte Tabelle:
 - inplayscenes
@@ -356,14 +410,6 @@ misc.php?action=inplayscenes_edit<br>
 <b>Posting-Erinnerung</b><br>
 misc.php?action=postingreminder
 
-# Individuelle Szenenfelder
-
-# Szeneninformationen im Forumdisplay und Thread
-
-# Automatische Archivierung
-
-# PDF-Export
-
 # Demo
 ### ACP
 <img src="https://stormborn.at/plugins/inplayscenes_acp_overview.png">
@@ -381,3 +427,7 @@ misc.php?action=postingreminder
 
 ### Profile
 <img src="https://stormborn.at/plugins/inplayscenes_profile.png">
+
+# PDF-Export Credits:
+- https://tcpdf.org/
+- https://www.php-einfach.de/experte/php-codebeispiele/pdf-per-php-erstellen-pdf-rechnung/ 
