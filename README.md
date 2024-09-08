@@ -54,24 +54,23 @@ Szenen gelten als inaktiv, wenn der letzte Post eine festgelegte Anzahl an Monat
 <br>
 <b>Hinweis zur Archivierung nach Monaten:</b><br>
 Einige Foren nutzen im Archiv Unterforen nach dem Format "Monatsname Jahr". Diese Struktur wird vom Plugin unterstützt. Aktuell sind deutsche und englische Monatsnamen vorgesehen, aber die Monatsnamen können problemlos erweitert werden. In der Datei inc/plugins und inc/task findest du folgendes Array:<br>
-<blockquote>
-$months = array(
-    '01' => ['January', 'Januar'],
-    '02' => ['February', 'Februar'],
-    '03' => ['March', 'März'],
-    '04' => ['April'],
-    '05' => ['May', 'Mai'],
-    '06' => ['June', 'Juni'],
-    '07' => ['July', 'Juli'],
-    '08' => ['August'],
-    '09' => ['September'],
-    '10' => ['October', 'Oktober'],
-    '11' => ['November'],
-    '12' => ['December', 'Dezember'],
-);
-</blockquote>
+$months = array(<br>
+    '01' => ['January', 'Januar'],<br>
+    '02' => ['February', 'Februar'],<br>
+    '03' => ['March', 'März'],<br>
+    '04' => ['April'],<br>
+    '05' => ['May', 'Mai'],<br>
+    '06' => ['June', 'Juni'],<br>
+    '07' => ['July', 'Juli'],<br>
+    '08' => ['August'],<br>
+    '09' => ['September'],<br>
+    '10' => ['October', 'Oktober'],<br>
+    '11' => ['November'],<br>
+    '12' => ['December', 'Dezember'],<br>
+);<br>
 Möchtest du dieses Array erweitern oder ändern, kannst du entweder den Inhalt der Klammern [] ersetzen oder weitere Monatsnamen durch Hinzufügen von , 'Monatsname' vor der schließenden Klammer ergänzen.<br>
-### Wichtiger Hinweis:
+<br>
+<b>Wichtiger Hinweis:</b><br>
 Das Plugin archiviert Szenen nur in diesen zwei Fällen (Accountlöschung und Inaktivität). Für die allgemeine Archivierung von Threads muss weiterhin das <a href="https://github.com/aheartforspinach/Archivierung">Archivierungsplugin</a> von aheartforspinach installiert sein. Eine Anpassung dieses Plugins befindet sich weiter unten in der Dokumentation.
 
 # PDF-Export
