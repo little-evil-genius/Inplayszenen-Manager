@@ -45,6 +45,7 @@ Für alle drei Templates gibt es eine kompakte Variable, die eine schlichte Ausg
 - {$inplayscene['postorder']}: Postingreihenfolge
 - {$inplayscene['trigger']}: Triggerwarnung (falls aktiviert)
 - {$inplayscene['Identifikator']}: Individuelles Szenenfeld<br>
+<br>
 Für die Anzeige in den Postbit-Templates muss $inplayscene['Inhalt'] durch $post['Inhalt'] ersetzt werden, um die Szeneninformationen korrekt in die einzelnen Posts zu integrieren.<br>
 <br>
 Wenn die Variablen direkt in die entsprechenden Templates eingefügt werden, kann es vorkommen, dass um die Variablen div-Tag oder ähnliche Elemente gelegt werden, die im Offplay-Bereich Design stören könnten. Um dies zu vermeiden, gibt es die Variable <b>{$display_onlyinplay}</b>, die mit einem inline style-Tag (style="display;") arbeitet, um den Inhalt im Offplay-Bereich unsichtbar zu machen. Diese Variable sollte entsprechend eingefügt werden, um eine saubere Darstellung zu gewährleisten.<br>
