@@ -1,12 +1,12 @@
 # Inplayszenen-Manager
 Das Inplayszenen-Manager Plugin bietet ein umfassendes Tool zur Verwaltung von Inplayszenen. Es hilft dabei, Szenen übersichtlich zu strukturieren, um so den Überblick über (laufende) Szenen zu behalten. Durch die Nutzung dieses Plugins wird das Erstellen und Verwalten von Szenen wesentlich vereinfacht, indem wichtige Informationen wie Datum, teilnehmende Charaktere und individuelle Felder, welche im ACP erstellt werden können, erfasst werden. Das Plugin unterstützt und unterscheidet sowohl den normalen Inplaybereich sowie den Bereich für alternative Universen (AU) Szenen. Es besteht die Möglichkeit, Szenen in verschiedene Typen zu unterteilen: private Szenen, in denen nur eingetragene Charaktere teilnehmen dürfen, Szenen mit Absprache, bei denen eine Teilnahme angefragt werden dürfen, sowie offene Szenen, in die sich jeder Charakter mit einem Klick hinzufügen kann. Zusätzlich kann für jede Szene eine Postingreihenfolge festgelegt werden. Es wird unterschieden zwischen Szenen mit fester Reihenfolge, bei denen die Teilnehmer in einer definierten Reihenfolge posten müssen, und solchen ohne feste Reihenfolge, bei denen das Posten freier erfolgt.<br>
 <br>
-Im Profil jedes Charakters werden alle bisherigen Szenen chronologisch aufgelistet. Hierbei wird zwischen Inplay- und AU-Szenen unterschieden, um eine klare Trennung zu erzielen. Szenen, in denen nur noch ein bestehender Charakter vorhanden ist, können als "nicht relevant" markiert werden, um die Übersichtlichkeit zu wahren, ohne die Szene komplett löschen zu müssen.<br>
+Im Profil jedes Charakters werden alle bisherigen Szenen chronologisch aufgelistet. Hierbei wird zwischen Inplay- und AU-Szenen unterschieden, um eine klare Trennung zu erzielen.Szenen, in denen nach einer Charakterlöschung nur noch ein bestehender Charakter vorhanden ist, können als "nicht relevant" markiert werden, um die Übersichtlichkeit zu wahren, ohne die Szene komplett löschen zu müssen.<br>
 <br>
 Das Plugin beitet zudem eine persönliche Übersicht über die aktiven Szenen. Diese Übersicht zeigt auf, wer in welchen Szenen als nächstes posten muss.<br>
 Mitglieder:innen können eine individuelle Posting-Erinnerung festlegen, die sie nach einer selbst festgelegten Anzahl von Tagen darauf hinweist, welchen Szenen schon länger unbeantwortet warten. Diese Erinnerung ist zusätzlich pro Charakter aktivierbar bzw. deaktivierbar. Genauso können Mitglieder:innen individuell entscheiden, wie sie über Inplayereignisse informiert werden wollen. Entweder per Private Nachricht oder MyAlerts, wenn das Forum diese Möglichkeit unterstützt.<br>
 <br>
-Bei Account Löschung werden betroffene Inplayszenen entsprechend in das Archiv verschoben. Zusätzlich kann das das automatische Archivieren von inaktiven Szenen eingestellt werden. Szenen, die über eine definierte Zeitspanne hinweg keine Aktivität zeigen (z.B. nach X Monaten ohne neuen Post), werden automatisch ins Archiv verschoben (deaktiverbar). 
+Bei Account Löschung werden betroffene Inplayszenen entsprechend in das Archiv verschoben. Zusätzlich kann das automatische Archivieren von inaktiven Szenen eingestellt werden. Szenen, die über eine definierte Zeitspanne hinweg keine Aktivität zeigen (z.B. nach X Monaten ohne neuen Post), werden automatisch ins Archiv verschoben (deaktiverbar). 
 
 # Wichtige Funktionen im Überblick
 - <b>Individuelle Szenenfelder:</b> Im Admin-CP können benutzerdefinierte Felder für die Szenen erstellt werden (z.B. für Ort, Tageszeit).
@@ -19,7 +19,7 @@ Bei Account Löschung werden betroffene Inplayszenen entsprechend in das Archiv 
 - <b>Posting-Erinnerungen:</b> Mitglied:innern können individuelle Erinnerungen einstellen, die nach einer bestimmten Zeitspanne Benachrichtigungen auslösen, falls sie in einer Szene posten müssen.
 - <b>Relevanzstatus:</b> Szenen, in denen nur noch ein aktiver Charakter existiert, können als "nicht relevant" markiert werden, wenn sie nicht mehr fortgesetzt werden (z.B. bei Löschung von Postpartner:innen oder Szenenabbruch), ohne dass sie gelöscht werden müssen.
 - <b>PDF-Export:</b> Szenen oder einzelne Inplay-Posts können als PDF-Dateien heruntergeladen und archiviert werden.
-- <b>Automatische Archivierung bei Account löschung:</b> Szenen, bei den ein teilnehmdender Charakter gelöscht wird, werden automatisch ins Archiv verschoben. 
+- <b>Automatische Archivierung bei Account-Löschung:</b> Szenen, bei den ein teilnehmdender Charakter gelöscht wird, werden automatisch ins Archiv verschoben. 
 - <b>Automatische Archivierung von inaktiven Szenen:</b> Szenen, die länger keine Aktivität zeigen, werden automatisch ins Archiv verschoben. Funktion kann vom Team deaktiviert werden.
 - <b>Benachrichtigungen:</b> Mitglieder:innen können wählen, ob sie Benachrichtigungen über MyAlerts oder private Nachrichten erhalten möchten.
 
@@ -53,7 +53,7 @@ Ebenso kann das gleiche Prinzip auf Informationen angewendet werden, die im Offp
 
 # Automatische Archivierung
 Diese Funktion greift in zwei Fällen: bei der Löschung eines Accounts und bei Inaktivität einer Szene.<br>
-1. <b>Archivierung bei Accountlöschung:</b><br>
+1. <b>Archivierung bei Account-Löschung:</b><br>
 Damit die Szenen eines gelöschten Accounts automatisch ins Archiv verschoben werden, muss der Account über das Popup "Optionen" im ACP gelöscht werden. Gehe dazu im ACP auf den Reiter Benutzer & Gruppen > Benutzer, wo alle Benutzer aufgelistet sind. Rechts neben jedem Account befindet sich ein Optionen-Button. Nach dem Drücken dieses Buttons erscheint eine Auswahl an Möglichkeiten. Wählst du die Option zur Löschung des Accounts, werden automatisch alle Szenen des gelöschten Charakters in das entsprechende Archiv verschoben.<br>
 2. <b>Archivierung bei Inaktivität:</b><br>
 Szenen gelten als inaktiv, wenn der letzte Post eine festgelegte Anzahl an Monaten überschritten hat. Diese Funktion kann in den Einstellungen individuell konfiguriert werden. Wird der Wert auf 0 gesetzt, ist die automatische Archivierung wegen Inaktivität deaktiviert.<br>
@@ -122,7 +122,7 @@ Das Plugin ist kompatibel mit den klassischen Profilfeldern von MyBB und/oder de
 # Neue Template-Gruppe innerhalb der Design-Templates
 - Inplayszenen-Manager
 
-# Neues Templates (nicht global!)
+# Neue Templates (nicht global!)
 - inplayscenes_counter
 - inplayscenes_editscene
 - inplayscenes_editscene_fields
