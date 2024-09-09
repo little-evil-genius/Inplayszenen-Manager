@@ -439,3 +439,87 @@ misc.php?action=postingreminder
 # PDF-Export Credits:
 - https://tcpdf.org/
 - https://www.php-einfach.de/experte/php-codebeispiele/pdf-per-php-erstellen-pdf-rechnung/ 
+
+# Anpassung andere Plugins
+### <a href="https://github.com/aheartforspinach/Archivierung">Themenarchivierung</a> von <a href="https://github.com/aheartforspinach">aheartforspinach</a>
+suche nach folgender Stelle:
+```php
+if ($db->table_exists("ipt_scenes")) {
+			$ipdate = $db->fetch_field($db->simple_select('ipt_scenes', 'date', 'tid = ' . $tid), 'date');
+		} elseif ($db->table_exists("scenetracker")) {
+			$ipdate = $db->fetch_field($db->simple_select('threads', 'scenetracker_date', 'tid = ' . $tid), 'scenetracker_date');
+			$ipdate = strtotime($ipdate);
+		}
+```
+ersetze es durch:
+```php
+if ($db->table_exists("ipt_scenes")) {
+			$ipdate = $db->fetch_field($db->simple_select('ipt_scenes', 'date', 'tid = ' . $tid), 'date');
+		} elseif ($db->table_exists("scenetracker")) {
+			$ipdate = $db->fetch_field($db->simple_select('threads', 'scenetracker_date', 'tid = ' . $tid), 'scenetracker_date');
+			$ipdate = strtotime($ipdate);
+		} elseif ($db->table_exists("inplayscenes")) {
+			$ipdate = $db->fetch_field($db->simple_select('inplayscenes', 'date', 'tid = ' . $tid), 'date');
+			$ipdate = strtotime($ipdate);
+		}
+```
+
+suche nach folgender Stelle:
+```php
+if ($db->table_exists('ipt_scenes_partners')) {
+		$query = $db->simple_select('ipt_scenes_partners', 'uid', 'tid = ' . $thread['tid']);
+	} elseif ($db->table_exists('scenetracker')) {
+		$query = $db->fetch_field($db->simple_select('threads', 'scenetracker_user', 'tid = ' . $thread['tid']), "scenetracker_user");
+	}
+```
+ersetze es durch:
+```php
+if ($db->table_exists('ipt_scenes_partners')) {
+		$query = $db->simple_select('ipt_scenes_partners', 'uid', 'tid = ' . $thread['tid']);
+	} elseif ($db->table_exists('scenetracker')) {
+		$query = $db->fetch_field($db->simple_select('threads', 'scenetracker_user', 'tid = ' . $thread['tid']), "scenetracker_user");
+	} elseif ($db->table_exists('inplayscenes')) {
+		$query = $db->fetch_field($db->simple_select('inplayscenes', 'partners', 'tid = ' . $thread['tid']), "partners");
+	}
+```
+
+suche nach folgender Stelle:
+```php
+if ($db->table_exists('ipt_scenes_partners')) {
+		while ($row = $db->fetch_array($query)) {
+			$partners[] = $row['uid'];
+		}
+	} elseif ($db->table_exists('scenetracker')) {
+		$partnerNames = explode(",", $query);
+		
+		foreach ($partnerNames as $partnerName) {
+			$partner = get_user_by_username($partnerName);
+			$partners[] = $partner['uid'];
+		}
+	}
+```
+ersetze es durch:
+```php
+if ($db->table_exists('ipt_scenes_partners')) {
+		while ($row = $db->fetch_array($query)) {
+			$partners[] = $row['uid'];
+		}
+	} elseif ($db->table_exists('scenetracker')) {
+		$partnerNames = explode(",", $query);
+		
+		foreach ($partnerNames as $partnerName) {
+			$partner = get_user_by_username($partnerName);
+			$partners[] = $partner['uid'];
+		}
+	} elseif ($db->table_exists('inplayscenes')) {
+		$partnerNames = explode(",", $query);
+		
+		foreach ($partnerNames as $partnerName) {
+			$partners[] = $partner['uid'];
+		}
+	}
+```
+### <a href="https://github.com/aheartforspinach/Whitelist">Whitelist</a> von <a href="https://github.com/aheartforspinach">aheartforspinach</a>
+
+
+### <a href="https://github.com/ItsSparksFly/mybb-inplaykalender">Inplaykalender</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
