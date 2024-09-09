@@ -602,3 +602,56 @@ if($db->table_exists("ipt_scenes")) {
     } else { $threadlist = ""; }
 }
 ```
+
+### <a href="https://github.com/ItsSparksFly/mybb-inplaykalender">Plottracker</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
+suche nach folgender Stelle in inc/plugins/plottracker.php:
+```php
+$selectedforums = explode(",", $mybb->settings['ipt_inplay']);
+```
+ersetze es durch:
+```php
+$selectedforums = explode(",", $mybb->settings['inplayscenes_inplayarea'].",".$mybb->settings['inplayscenes_sideplays']);
+$excludedareas = explode(",", $mybb->settings['inplayscenes_excludedarea']);
+
+foreach ($excludedareas as $excludedarea) {
+	$key = array_search($excludedarea, $selectedforums);
+	if ($key !== false) {
+		unset($selectedforums[$key]);
+	}
+}
+```
+
+suche nach folgender Stelle in plottracker.php:
+```php
+$query_2 = $db->simple_select("ipt_scenes_partners", "uid", "tid='{$thread['tid']}'");
+            while($userlist = $db->fetch_array($query_2)) {
+                $user = get_user($userlist['uid']);
+                $username = format_name($user['username'], $user['usergroup'], $user['displaygroup']);
+                $formattedname = build_profile_link($username, $userlist['uid']);
+                $usernames .= "&nbsp; &nbsp; {$formattedname}";
+            }
+```
+ersetze es durch:
+```php
+$partners_uids = $db->fetch_field($db->simple_select("inplayscenes", "partners", "tid = '".$thread['tid']."'"), 'partners');
+$partners_usernames = $db->fetch_field($db->simple_select("inplayscenes", "partners_username", "tid = '".$thread['tid']."'"), 'partners_username');
+
+$characters_uids = explode(",", $partners_uids);
+$characters_uids = array_map("trim", $characters_uids);
+
+$characters_usernames = explode(",", $partners_usernames);
+$characters_usernames = array_map("trim", $characters_usernames);
+
+$characters = array();
+foreach ($characters_uids as $key => $uid) {
+	$user = get_user($uid);
+	if (!empty($user)) {
+		$username = format_name($user['username'], $user['usergroup'], $user['displaygroup']);
+		$formattedname = build_profile_link($username, $uid);
+		$characters[] = $formattedname;
+	} else {
+		$characters = $usernames[$key];
+	}
+}
+$usernames = implode(" &nbsp; &nbsp; ", $characters);
+```
