@@ -48,7 +48,8 @@ Für alle drei Templates gibt es eine kompakte Variable, die eine schlichte Ausg
 <br>
 Für die Anzeige in den Postbit-Templates muss $inplayscene['Inhalt'] durch $post['Inhalt'] ersetzt werden, um die Szeneninformationen korrekt in die einzelnen Posts zu integrieren.<br>
 <br>
-Wenn die Variablen direkt in die entsprechenden Templates eingefügt werden, kann es vorkommen, dass um die Variablen div-Tag oder ähnliche Elemente gelegt werden, die im Offplay-Bereich Design stören könnten. Um dies zu vermeiden, gibt es die Variable <b>{$display_onlyinplay}</b>, die mit einem inline style-Tag (style="display;") arbeitet, um den Inhalt im Offplay-Bereich unsichtbar zu machen. Diese Variable sollte entsprechend eingefügt werden, um eine saubere Darstellung zu gewährleisten.<br>
+Für maximale Flexibilität im Design stellt das Plugin zwei Variablen bereit, die direkt in die entsprechenden Templates Forumdisplay ("forumdisplay_thread"), Showthread ("showthread") sowie Postbit ("postbit" und "postbit_classic") eingefügt werden können. Um zu verhindern, dass Texte oder Icons, die zur besseren Verständlichkeit oder Gestaltung hinzugefügt wurden, im Offplay-Bereich das Design stören, können diese Variablen genutzt werden. Um dies zu vermeiden, gibt es die Variable <b>{$display_onlyinplay}</b>, die mit einem <a href="https://wiki.selfhtml.org/wiki/HTML/Attribute/style">style-Tag</a> (style="display:none;") arbeitet, um den Inhalt im Offplay-Bereich unsichtbar zu machen. <br>
+<i>display: none</i> unterdrückt die Anzeige eines Elements vollständig und das Element verbraucht keinen Platz im Layout. Diese Variable sollte entsprechend eingefügt werden, um eine saubere Darstellung zu gewährleisten.<br>
 Ebenso kann das gleiche Prinzip auf Informationen angewendet werden, die im Offplay angezeigt, jedoch im Inplay ausgeblendet werden sollen. Dafür kann die Variable <b>{$display_offplay}</b> verwendet werden.
 
 # Automatische Archivierung
