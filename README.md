@@ -520,6 +520,85 @@ if ($db->table_exists('ipt_scenes_partners')) {
 	}
 ```
 ### <a href="https://github.com/aheartforspinach/Whitelist">Whitelist</a> von <a href="https://github.com/aheartforspinach">aheartforspinach</a>
+suche nach folgender Stelle in inc/datahandlers/whitelist.php:
+```php
+$query = $db->simple_select(
+            'ipt_scenes ips join '.  TABLE_PREFIX .'posts p on ips.tid = p.tid join '.  TABLE_PREFIX .'ipt_scenes_partners ipp on ips.tid = ipp.tid', 
+            'ipp.uid',
+            'p.uid in ('. implode(',', array_keys($this->characters)) .') and dateline > '. $UnixFirstXMonthAgo,
+            ['order_by' => 'dateline', 'order_dir' => 'desc']
+        );
+        while ($row = $db->fetch_array($query)) {
+            if (!in_array($row['uid'], $allowedCharacters)) {
+                $allowedCharacters[] = (int)$row['uid'];
+            }
+        }
+```
+ersetze es durch:
+```php
+$query = $db->simple_select(
+        'inplayscenes ips join '.  TABLE_PREFIX .'posts p on ips.tid = p.tid', 
+        'ips.partners',
+        'p.uid in ('. implode(',', array_keys($this->characters)) .') and p.dateline > '. $UnixFirstXMonthAgo,
+        ['order_by' => 'p.dateline', 'order_dir' => 'desc']
+    );
 
+    while ($row = $db->fetch_array($query)) {
+        $partners = explode(',', $row['partners']);
+        foreach ($partners as $partnerUid) {
+            $partnerUid = intval($partnerUid);
+
+            if (!in_array($partnerUid, $allowedCharacters)) {
+                $allowedCharacters[] = $partnerUid;
+            }
+        }
+    }
+```
 
 ### <a href="https://github.com/ItsSparksFly/mybb-inplaykalender">Inplaykalender</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
+suche nach folgender Stelle in inc/plugins/inplaykalender.php & inplaykalender.php
+```php
+if($db->table_exists("ipt_scenes")) {
+                $query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+                if(mysqli_num_rows($query) > 0) {
+                        $threadlist = "";
+                        while($szenenliste = $db->fetch_array($query)) {
+                            $thread = get_thread($szenenliste['tid']);
+                            if($thread) {
+                                $szenen = true;
+                                $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+                            } else {  }
+                    } 
+                } else { $threadlist = ""; }
+            }
+```
+ersetze es durch:
+```php
+if($db->table_exists("ipt_scenes")) {
+    $query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+    if(mysqli_num_rows($query) > 0) {
+            $threadlist = "";
+            while($szenenliste = $db->fetch_array($query)) {
+                $thread = get_thread($szenenliste['tid']);
+                if($thread) {
+                    $szenen = true;
+                    $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+                } else {  }
+        } 
+    } else { $threadlist = ""; }
+} elseif ($db->table_exists('inplayscenes')) {
+    $date_db = date('Y-m-d', $date);
+    $query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
+    $szenen = false;
+    if(mysqli_num_rows($query) > 0) {
+            $threadlist = "";
+            while($szenenliste = $db->fetch_array($query)) {
+                $thread = get_thread($szenenliste['tid']);
+                if($thread) {
+                    $szenen = true;
+                    $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
+                } else {  }
+        } 
+    } else { $threadlist = ""; }
+}
+```
