@@ -434,7 +434,7 @@ misc.php?action=postingreminder
 <img src="https://stormborn.at/plugins/inplayscenes_reminder.png">
 
 ### Profile
-<img src="https://stormborn.at/plugins/inplayscenes_profile.png">
+<img src="https://stormborn.at/plugins/inplayscenes_profile_month.png">
 
 # PDF-Export Credits:
 - https://tcpdf.org/
