@@ -442,167 +442,227 @@ misc.php?action=postingreminder
 
 # Anpassung andere Plugins
 ### <a href="https://github.com/aheartforspinach/Archivierung">Themenarchivierung</a> von <a href="https://github.com/aheartforspinach">aheartforspinach</a>
-suche nach folgender Stelle:
+suche nach folgender Stelle in inc/plugins/archiving.php:
 ```php
 if ($db->table_exists("ipt_scenes")) {
-			$ipdate = $db->fetch_field($db->simple_select('ipt_scenes', 'date', 'tid = ' . $tid), 'date');
-		} elseif ($db->table_exists("scenetracker")) {
-			$ipdate = $db->fetch_field($db->simple_select('threads', 'scenetracker_date', 'tid = ' . $tid), 'scenetracker_date');
-			$ipdate = strtotime($ipdate);
-		}
+	$ipdate = $db->fetch_field($db->simple_select('ipt_scenes', 'date', 'tid = ' . $tid), 'date');
+} elseif ($db->table_exists("scenetracker")) {
+	$ipdate = $db->fetch_field($db->simple_select('threads', 'scenetracker_date', 'tid = ' . $tid), 'scenetracker_date');
+	$ipdate = strtotime($ipdate);
+}
 ```
 ersetze es durch:
 ```php
 if ($db->table_exists("ipt_scenes")) {
-			$ipdate = $db->fetch_field($db->simple_select('ipt_scenes', 'date', 'tid = ' . $tid), 'date');
-		} elseif ($db->table_exists("scenetracker")) {
-			$ipdate = $db->fetch_field($db->simple_select('threads', 'scenetracker_date', 'tid = ' . $tid), 'scenetracker_date');
-			$ipdate = strtotime($ipdate);
-		} elseif ($db->table_exists("inplayscenes")) {
-			$ipdate = $db->fetch_field($db->simple_select('inplayscenes', 'date', 'tid = ' . $tid), 'date');
-			$ipdate = strtotime($ipdate);
-		}
+	$ipdate = $db->fetch_field($db->simple_select('ipt_scenes', 'date', 'tid = ' . $tid), 'date');
+} elseif ($db->table_exists("scenetracker")) {
+	$ipdate = $db->fetch_field($db->simple_select('threads', 'scenetracker_date', 'tid = ' . $tid), 'scenetracker_date');
+	$ipdate = strtotime($ipdate);
+} elseif ($db->table_exists("inplayscenes")) {
+	$ipdate = $db->fetch_field($db->simple_select('inplayscenes', 'date', 'tid = ' . $tid), 'date');
+	$ipdate = strtotime($ipdate);
+}
 ```
 
 suche nach folgender Stelle:
 ```php
 if ($db->table_exists('ipt_scenes_partners')) {
-		$query = $db->simple_select('ipt_scenes_partners', 'uid', 'tid = ' . $thread['tid']);
-	} elseif ($db->table_exists('scenetracker')) {
-		$query = $db->fetch_field($db->simple_select('threads', 'scenetracker_user', 'tid = ' . $thread['tid']), "scenetracker_user");
-	}
+	$query = $db->simple_select('ipt_scenes_partners', 'uid', 'tid = ' . $thread['tid']);
+} elseif ($db->table_exists('scenetracker')) {
+	$query = $db->fetch_field($db->simple_select('threads', 'scenetracker_user', 'tid = ' . $thread['tid']), "scenetracker_user");
+}
 ```
 ersetze es durch:
 ```php
 if ($db->table_exists('ipt_scenes_partners')) {
-		$query = $db->simple_select('ipt_scenes_partners', 'uid', 'tid = ' . $thread['tid']);
-	} elseif ($db->table_exists('scenetracker')) {
-		$query = $db->fetch_field($db->simple_select('threads', 'scenetracker_user', 'tid = ' . $thread['tid']), "scenetracker_user");
-	} elseif ($db->table_exists('inplayscenes')) {
-		$query = $db->fetch_field($db->simple_select('inplayscenes', 'partners', 'tid = ' . $thread['tid']), "partners");
-	}
+	$query = $db->simple_select('ipt_scenes_partners', 'uid', 'tid = ' . $thread['tid']);
+} elseif ($db->table_exists('scenetracker')) {
+	$query = $db->fetch_field($db->simple_select('threads', 'scenetracker_user', 'tid = ' . $thread['tid']), "scenetracker_user");
+} elseif ($db->table_exists('inplayscenes')) {
+	$query = $db->fetch_field($db->simple_select('inplayscenes', 'partners', 'tid = ' . $thread['tid']), "partners");
+}
 ```
 
 suche nach folgender Stelle:
 ```php
 if ($db->table_exists('ipt_scenes_partners')) {
-		while ($row = $db->fetch_array($query)) {
-			$partners[] = $row['uid'];
-		}
-	} elseif ($db->table_exists('scenetracker')) {
-		$partnerNames = explode(",", $query);
-		
-		foreach ($partnerNames as $partnerName) {
-			$partner = get_user_by_username($partnerName);
-			$partners[] = $partner['uid'];
-		}
+	while ($row = $db->fetch_array($query)) {
+		$partners[] = $row['uid'];
 	}
+} elseif ($db->table_exists('scenetracker')) {
+	$partnerNames = explode(",", $query);
+	foreach ($partnerNames as $partnerName) {
+		$partner = get_user_by_username($partnerName);
+		$partners[] = $partner['uid'];
+	}
+}
 ```
 ersetze es durch:
 ```php
 if ($db->table_exists('ipt_scenes_partners')) {
-		while ($row = $db->fetch_array($query)) {
-			$partners[] = $row['uid'];
-		}
-	} elseif ($db->table_exists('scenetracker')) {
-		$partnerNames = explode(",", $query);
-		
-		foreach ($partnerNames as $partnerName) {
-			$partner = get_user_by_username($partnerName);
-			$partners[] = $partner['uid'];
-		}
-	} elseif ($db->table_exists('inplayscenes')) {
-		$partnerNames = explode(",", $query);
-		
-		foreach ($partnerNames as $partnerName) {
-			$partners[] = $partner['uid'];
-		}
+	while ($row = $db->fetch_array($query)) {
+		$partners[] = $row['uid'];
 	}
+} elseif ($db->table_exists('scenetracker')) {
+	$partnerNames = explode(",", $query);
+
+	foreach ($partnerNames as $partnerName) {
+		$partner = get_user_by_username($partnerName);
+		$partners[] = $partner['uid'];
+	}
+} elseif ($db->table_exists('inplayscenes')) {
+	$partnerNames = explode(",", $query);
+
+	foreach ($partnerNames as $partnerName) {
+		$partners[] = $partner['uid'];
+	}
+}
 ```
 ### <a href="https://github.com/aheartforspinach/Whitelist">Whitelist</a> von <a href="https://github.com/aheartforspinach">aheartforspinach</a>
 suche nach folgender Stelle in inc/datahandlers/whitelist.php:
 ```php
 $query = $db->simple_select(
-            'ipt_scenes ips join '.  TABLE_PREFIX .'posts p on ips.tid = p.tid join '.  TABLE_PREFIX .'ipt_scenes_partners ipp on ips.tid = ipp.tid', 
-            'ipp.uid',
-            'p.uid in ('. implode(',', array_keys($this->characters)) .') and dateline > '. $UnixFirstXMonthAgo,
-            ['order_by' => 'dateline', 'order_dir' => 'desc']
-        );
-        while ($row = $db->fetch_array($query)) {
-            if (!in_array($row['uid'], $allowedCharacters)) {
-                $allowedCharacters[] = (int)$row['uid'];
-            }
-        }
+	'ipt_scenes ips join '. TABLE_PREFIX .'posts p on ips.tid = p.tid join '. TABLE_PREFIX .'ipt_scenes_partners ipp on ips.tid = ipp.tid',
+	'ipp.uid',
+	'p.uid in ('. implode(',', array_keys($this->characters)) .') and dateline > '. $UnixFirstXMonthAgo,
+	['order_by' => 'dateline', 'order_dir' => 'desc']
+);
+while ($row = $db->fetch_array($query)) {
+	if (!in_array($row['uid'], $allowedCharacters)) {
+		$allowedCharacters[] = (int)$row['uid'];
+	}
+}
 ```
 ersetze es durch:
 ```php
 $query = $db->simple_select(
-        'inplayscenes ips join '.  TABLE_PREFIX .'posts p on ips.tid = p.tid', 
-        'ips.partners',
-        'p.uid in ('. implode(',', array_keys($this->characters)) .') and p.dateline > '. $UnixFirstXMonthAgo,
-        ['order_by' => 'p.dateline', 'order_dir' => 'desc']
-    );
+	'inplayscenes ips join '. TABLE_PREFIX .'posts p on ips.tid = p.tid',
+	'ips.partners',
+	'p.uid in ('. implode(',', array_keys($this->characters)) .') and p.dateline > '. $UnixFirstXMonthAgo,
+	['order_by' => 'p.dateline', 'order_dir' => 'desc']
+);
 
-    while ($row = $db->fetch_array($query)) {
-        $partners = explode(',', $row['partners']);
-        foreach ($partners as $partnerUid) {
-            $partnerUid = intval($partnerUid);
+while ($row = $db->fetch_array($query)) {
+	$partners = explode(',', $row['partners']);
+	foreach ($partners as $partnerUid) {
+		$partnerUid = intval($partnerUid);
 
-            if (!in_array($partnerUid, $allowedCharacters)) {
-                $allowedCharacters[] = $partnerUid;
-            }
-        }
-    }
-```
-
-### <a href="https://github.com/ItsSparksFly/mybb-inplaykalender">Inplaykalender</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
-suche nach folgender Stelle in inc/plugins/inplaykalender.php & inplaykalender.php
-```php
-if($db->table_exists("ipt_scenes")) {
-                $query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
-                if(mysqli_num_rows($query) > 0) {
-                        $threadlist = "";
-                        while($szenenliste = $db->fetch_array($query)) {
-                            $thread = get_thread($szenenliste['tid']);
-                            if($thread) {
-                                $szenen = true;
-                                $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
-                            } else {  }
-                    } 
-                } else { $threadlist = ""; }
-            }
-```
-ersetze es durch:
-```php
-if($db->table_exists("ipt_scenes")) {
-    $query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
-    if(mysqli_num_rows($query) > 0) {
-            $threadlist = "";
-            while($szenenliste = $db->fetch_array($query)) {
-                $thread = get_thread($szenenliste['tid']);
-                if($thread) {
-                    $szenen = true;
-                    $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
-                } else {  }
-        } 
-    } else { $threadlist = ""; }
-} elseif ($db->table_exists('inplayscenes')) {
-    $date_db = date('Y-m-d', $date);
-    $query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
-    $szenen = false;
-    if(mysqli_num_rows($query) > 0) {
-            $threadlist = "";
-            while($szenenliste = $db->fetch_array($query)) {
-                $thread = get_thread($szenenliste['tid']);
-                if($thread) {
-                    $szenen = true;
-                    $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
-                } else {  }
-        } 
-    } else { $threadlist = ""; }
+		if (!in_array($partnerUid, $allowedCharacters)) {
+			$allowedCharacters[] = $partnerUid;
+		}
+	}
 }
 ```
 
+### <a href="https://github.com/ItsSparksFly/mybb-inplaykalender">Inplaykalender</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
+suche nach folgender Stelle in inc/plugins/inplaykalender.php
+```php
+$szenen = false;
+if ($db->table_exists("ipt_scenes")) {
+	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+	if (mysqli_num_rows($query) > 0) {
+		$threadlist = "";
+		while ($szenenliste = $db->fetch_array($query)) {
+			$thread = get_thread($szenenliste['tid']);
+			if ($thread) {
+				$szenen = true;
+				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+			} else {}
+		}
+	} else {
+		$threadlist = "";
+	}
+}
+```
+ersetze es durch:
+```php
+$szenen = false;
+if ($db->table_exists("ipt_scenes")) {
+	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+	if (mysqli_num_rows($query) > 0) {
+		$threadlist = "";
+		while ($szenenliste = $db->fetch_array($query)) {
+			$thread = get_thread($szenenliste['tid']);
+			if ($thread) {
+				$szenen = true;
+				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+			} else {}
+		}
+	} else {
+		$threadlist = "";
+	}
+} elseif ($db->table_exists('inplayscenes')) {
+	$date_db = date('Y-m-d', $date);
+	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
+	if (mysqli_num_rows($query) > 0) {
+		$threadlist = "";
+		while ($szenenliste = $db->fetch_array($query)) {
+			$thread = get_thread($szenenliste['tid']);
+			if ($thread) {
+				$szenen = true;
+				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
+			} else {}
+		}
+	} else {
+		$threadlist = "";
+	}
+}
+```
+
+suche nach folgender Stelle in inplaykalender.php
+```php
+if ($db->table_exists("ipt_scenes")) {
+	$szenen = false;
+	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+	if (mysqli_num_rows($query) > 0) {
+		$threadlist = "";
+		while ($szenenliste = $db->fetch_array($query)) {
+			$thread = get_thread($szenenliste['tid']);
+			if ($thread) {
+				$szenen = true;
+				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+			} else {}
+		}
+	} else {
+		$threadlist = "";
+	}
+}
+```
+ersetze es durch:
+```php
+if ($db->table_exists("ipt_scenes")) {
+	$szenen = false;
+	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+	if (mysqli_num_rows($query) > 0) {
+		$threadlist = "";
+		while ($szenenliste = $db->fetch_array($query)) {
+			$thread = get_thread($szenenliste['tid']);
+			if ($thread) {
+				$szenen = true;
+				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+			} else {}
+		}
+	} else {
+		$threadlist = "";
+	}
+} elseif ($db->table_exists('inplayscenes')) {
+	$date_db = date('Y-m-d', $date);
+	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
+	$szenen = false;
+	if (mysqli_num_rows($query) > 0) {
+		$threadlist = "";
+		while ($szenenliste = $db->fetch_array($query)) {
+			$thread = get_thread($szenenliste['tid']);
+			if ($thread) {
+				$szenen = true;
+				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
+			} else {}
+		}
+	} else {
+		$threadlist = "";
+	}
+}
+```
 ### <a href="https://github.com/ItsSparksFly/mybb-plottracker/tree/inplaytracker30">Plottracker</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
 suche nach folgender Stelle in inc/plugins/plottracker.php:
 ```php
@@ -624,12 +684,12 @@ foreach ($excludedareas as $excludedarea) {
 suche nach folgender Stelle in plottracker.php:
 ```php
 $query_2 = $db->simple_select("ipt_scenes_partners", "uid", "tid='{$thread['tid']}'");
-            while($userlist = $db->fetch_array($query_2)) {
-                $user = get_user($userlist['uid']);
-                $username = format_name($user['username'], $user['usergroup'], $user['displaygroup']);
-                $formattedname = build_profile_link($username, $userlist['uid']);
-                $usernames .= "&nbsp; &nbsp; {$formattedname}";
-            }
+while ($userlist = $db->fetch_array($query_2)) {
+	$user = get_user($userlist['uid']);
+	$username = format_name($user['username'], $user['usergroup'], $user['displaygroup']);
+	$formattedname = build_profile_link($username, $userlist['uid']);
+	$usernames .= "&nbsp; &nbsp; {$formattedname}";
+}
 ```
 ersetze es durch:
 ```php
