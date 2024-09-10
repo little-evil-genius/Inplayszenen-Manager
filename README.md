@@ -130,6 +130,7 @@ Das Plugin ist kompatibel mit den klassischen Profilfeldern von MyBB und/oder de
 - inplayscenes_forumdisplay
 - inplayscenes_forumdisplay_fields
 - inplayscenes_memberprofile
+- inplayscenes_memberprofile_month
 - inplayscenes_memberprofile_none
 - inplayscenes_memberprofile_scenes
 - inplayscenes_memberprofile_year
