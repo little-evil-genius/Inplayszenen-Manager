@@ -1724,7 +1724,7 @@ function inplayscenes_admin_rpgstuff_menu_updates(&$sub_menu) {
 
         $sub_menu[] = [
             "id" => "inplayscenes_updates",
-            "title" => "Inplayszenen übertragen",
+            "title" => $lang->inplayscenes_updates_nav,
             "link" => "index.php?module=rpgstuff-inplayscenes_updates"
         ];
 
@@ -2273,25 +2273,25 @@ function inplayscenes_admin_manage() {
     if ($run_module == 'rpgstuff' && $action_file == 'inplayscenes_updates') {
 
         $trackersystem_list = array(
-            "" => "Altes Inplayszenensystem wählen",
-            "jule2" => "Inplaytracker 2.0 von sparks fly",
-            "jule3" => "Inplaytracker 3.0 von sparks fly",
-            "katja" => "Szenentracker von risuena"
+            "" => $lang->inplayscenes_updates_trackersystem,
+            "jule2" => $lang->inplayscenes_updates_trackersystem_jule2,
+            "jule3" => $lang->inplayscenes_updates_trackersystem_jule3,
+            "katja" => $lang->inplayscenes_updates_trackersystem_katja
         );
 
         // Add to page navigation
-        $page->add_breadcrumb_item("Inplayszenen übertragen", "index.php?module=rpgstuff-inplayscenes_updates");
+        $page->add_breadcrumb_item($lang->inplayscenes_updates_page, "index.php?module=rpgstuff-inplayscenes_updates");
     
         if ($mybb->get_input('action') == "" || !$mybb->get_input('action')) {
 
-            $page->output_header("Inplayszenen übertragen");
+            $page->output_header($lang->inplayscenes_updates_page);
     
             if ($mybb->request_method == 'post') {
 
                 $selected_tracker = $mybb->get_input('trackersystem');
 
                 if (empty($selected_tracker)) {
-                    $errors[] = "Bitte wähle ein Trackersystem aus!";
+                    $errors[] = $lang->inplayscenes_updates_error;
                 }
 
                 if(empty($errors)) {
@@ -2434,15 +2434,15 @@ function inplayscenes_admin_manage() {
         
                             if ($all_successful) {
                                 // Log admin action           
-                                log_admin_action("Inplayszenen übertragen");
+                                log_admin_action($lang->inplayscenes_updates_page);
         
-                                flash_message("Alle Szenen wurden erfolgreich übertragen. Du kannst nun das alte Trackersystem entfernen.", 'success');
+                                flash_message($lang->inplayscenes_updates_update_flash, 'success');
                                 admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
                             } else {
-                                flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                                flash_message($lang->inplayscenes_updates_error_flash, 'error');
                             }
                         } else {
-                            flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                            flash_message($lang->inplayscenes_updates_error_flash, 'error');
                         }
                     } 
                     // Inplaytracker 3.0 von sparks fly
@@ -2548,15 +2548,15 @@ function inplayscenes_admin_manage() {
         
                             if ($all_successful) {
                                 // Log admin action           
-                                log_admin_action("Inplayszenen übertragen");
+                                log_admin_action($lang->inplayscenes_updates_page);
         
-                                flash_message("Alle Szenen wurden erfolgreich übertragen. Du kannst nun das alte Trackersystem entfernen.", 'success');
+                                flash_message($lang->inplayscenes_updates_update_flash, 'success');
                                 admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
                             } else {
-                                flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                                flash_message($lang->inplayscenes_updates_error_flash, 'error');
                             }
                         } else {
-                            flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                            flash_message($lang->inplayscenes_updates_error_flash, 'error');
                         }
                     }
                     // Szenentracker von Katja
@@ -2653,15 +2653,15 @@ function inplayscenes_admin_manage() {
         
                             if ($all_successful) {
                                 // Log admin action           
-                                log_admin_action("Inplayszenen übertragen");
+                                log_admin_action($lang->inplayscenes_updates_page);
         
-                                flash_message("Alle Szenen wurden erfolgreich übertragen. Du kannst nun das alte Trackersystem entfernen.", 'success');
+                                flash_message($lang->inplayscenes_updates_update_flash, 'success');
                                 admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
                             } else {
-                                flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
-                            }     
+                                flash_message($lang->inplayscenes_updates_error_flash, 'error');
+                            }   
                         } else {
-                            flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                            flash_message($lang->inplayscenes_updates_error_flash, 'error');
                         }
                     }
                 }
@@ -2674,23 +2674,23 @@ function inplayscenes_admin_manage() {
     
             // Form for selecting tracker system
             $form = new Form("index.php?module=rpgstuff-inplayscenes_updates", "post", "", 1);
-            $form_container = new FormContainer("Inplayszenen übertragen");
+            $form_container = new FormContainer($lang->inplayscenes_updates_page);
             echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
   
             $inplayscenes = $db->fetch_field($db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes"), "tid");
 
             if ($inplayscenes == 0) {
                 $form_container->output_row(
-                    "Trackersystem", 
-                    "Welches Plugin hast du vorher benutzt? Bitte beachtet, das von einem unveränderten Plugin ausgegangen wird.",
+                    $lang->inplayscenes_updates_select, 
+                    $lang->inplayscenes_updates_select_desc,
                     $form->generate_select_box('trackersystem', $trackersystem_list, $mybb->get_input('trackersystem'), array('id' => 'trackersystem')), 'trackersystem'
                 );
             
                 $form_container->end();
-                $buttons[] = $form->generate_submit_button("Inplayszenen übertragen");
+                $buttons[] = $form->generate_submit_button($lang->inplayscenes_updates_button);
                 $form->output_submit_wrapper($buttons);
             } else {
-                $form_container->output_cell("Die Inplayszenen wurden schon übertragen. Du kannst das alte Trackersystem deinstallieren.", array("colspan" => 5, 'style' => 'text-align: center;'));
+                $form_container->output_cell($lang->inplayscenes_updates_none, array("colspan" => 5, 'style' => 'text-align: center;'));
                 $form_container->construct_row();
 
                 $form_container->end();
@@ -6349,12 +6349,16 @@ function inplayscenes_generate_input_field($identification, $type, $value = '', 
 // POSTING-REIHENFOLGE SELECT GENERIEN
 function inplayscenes_generate_postorder_select($selected_value) {
 
+	global $lang;
+
+	$lang->load('inplayscenes');
+
     // Optionen für das Dropdown-Menü
     $options = [
-        '1' => 'Feste Postingreihenfolge',
-        '0' => 'ohne Postingreihenfolge'
-    ];
-
+        '1' => $lang->inplayscenes_postorder_fixed,
+        '0' => $lang->inplayscenes_postorder_none
+    ];    
+    
     // Start des Select-Tags
     $select = '<select name="postorder">';
 
@@ -6373,11 +6377,15 @@ function inplayscenes_generate_postorder_select($selected_value) {
 // OFFENE SZENEN SELECT GENERIEN
 function inplayscenes_generate_openscene_select($selected_value) {
 
+	global $lang;
+
+	$lang->load('inplayscenes');
+
     // Optionen für das Dropdown-Menü
     $options = [
-        '0' => 'Private Szene',
-        '1' => 'Nach Absprache',
-        '2' => 'öffentliche Szene'
+        '0' => $lang->inplayscenes_openscene_private,
+        '1' => $lang->inplayscenes_openscene_agreed,
+        '2' => $lang->inplayscenes_openscene_open
     ];
 
     // Start des Select-Tags
