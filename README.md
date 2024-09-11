@@ -25,6 +25,8 @@ Bei Account-Löschung werden betroffene Inplayszenen entsprechend in das Archiv 
 
 # Vorrausetzung
 - Der <a href="https://www.mybb.de/erweiterungen/18x/plugins-verschiedenes/enhanced-account-switcher/" target="_blank">Accountswitcher</a> von doylecc <b>muss</b> installiert sein.
+- Inplay-Bereich & dazugehöriges Archiv
+- alternativen Universen (AU)/"was wäre, wenn..."-Bereich & dazugehöriges Archiv
 
 # Individuelle Szenenfelder
 Dieses Plugin bietet Flexibilität, indem nur die Felder für Charaktere und Datum sowie optional für Triggerwarnungen fest vordefiniert sind. Alle weiteren Felder können vom Team im ACP individuell erstellt werden, um den Anforderungen des Forums gerecht zu werden. Jedes Szenenfeld erhält dabei einen eindeutigen Identifikator, der keine Sonderzeichen oder Leerzeichen enthalten darf, um maschinenlesbar zu sein.<br>
