@@ -24,6 +24,7 @@ if(!defined("IN_MYBB")){
 $plugins->add_hook("admin_rpgstuff_action_handler", "inplayscenes_admin_rpgstuff_action_handler");
 $plugins->add_hook("admin_rpgstuff_permissions", "inplayscenes_admin_rpgstuff_permissions");
 $plugins->add_hook("admin_rpgstuff_menu", "inplayscenes_admin_rpgstuff_menu");
+$plugins->add_hook("admin_rpgstuff_menu_updates", "inplayscenes_admin_rpgstuff_menu_updates");
 $plugins->add_hook("admin_load", "inplayscenes_admin_manage");
 $plugins->add_hook('newthread_start', 'inplayscenes_newthread_start');
 $plugins->add_hook("datahandler_post_validate_thread", "inplayscenes_validate_newthread");
@@ -1685,6 +1686,7 @@ function inplayscenes_deactivate(){
 // action handler fürs acp konfigurieren
 function inplayscenes_admin_rpgstuff_action_handler(&$actions) {
 	$actions['inplayscenes'] = array('active' => 'inplayscenes', 'file' => 'inplayscenes');
+	$actions['inplayscenes_updates'] = array('active' => 'inplayscenes_updates', 'file' => 'inplayscenes_updates');
 }
 
 // Benutzergruppen-Berechtigungen im ACP
@@ -1711,29 +1713,48 @@ function inplayscenes_admin_rpgstuff_menu(&$sub_menu) {
 	];
 }
 
+// im Menü einfügen [Übertragen]
+function inplayscenes_admin_rpgstuff_menu_updates(&$sub_menu) {
+
+	global $mybb, $lang, $db;
+
+    if ($db->table_exists("scenetracker") || $db->table_exists("ipt_scenes_partners") || $db->field_exists("iport", "threads")) {
+        
+        $lang->load('inplayscenes');
+
+        $sub_menu[] = [
+            "id" => "inplayscenes_updates",
+            "title" => "Inplayszenen übertragen",
+            "link" => "index.php?module=rpgstuff-inplayscenes_updates"
+        ];
+
+    }
+}
+
 // die Seiten
 function inplayscenes_admin_manage() {
 
 	global $mybb, $db, $lang, $page, $run_module, $action_file, $cache;
 
-    if ($page->active_action != 'inplayscenes') {
+    if ($page->active_action != 'inplayscenes' AND $page->active_action != 'inplayscenes_updates') {
 		return false;
 	}
 
 	$lang->load('inplayscenes');
 
-    $select_list = array(
-        "text" => $lang->inplayscenes_type_text,
-        "textarea" => $lang->inplayscenes_type_textarea,
-        "select" => $lang->inplayscenes_type_select,
-        "multiselect" => $lang->inplayscenes_type_multiselect,
-        "radio" => $lang->inplayscenes_type_radio,
-        "checkbox" => $lang->inplayscenes_type_checkbox,
-        "date" => $lang->inplayscenes_type_date,
-        "url" => $lang->inplayscenes_type_url
-    );
-
+    // FELDER
 	if ($run_module == 'rpgstuff' && $action_file == 'inplayscenes') {
+
+        $select_list = array(
+            "text" => $lang->inplayscenes_type_text,
+            "textarea" => $lang->inplayscenes_type_textarea,
+            "select" => $lang->inplayscenes_type_select,
+            "multiselect" => $lang->inplayscenes_type_multiselect,
+            "radio" => $lang->inplayscenes_type_radio,
+            "checkbox" => $lang->inplayscenes_type_checkbox,
+            "date" => $lang->inplayscenes_type_date,
+            "url" => $lang->inplayscenes_type_url
+        );
 
 		// Add to page navigation
 		$page->add_breadcrumb_item($lang->inplayscenes_breadcrumb_main, "index.php?module=rpgstuff-inplayscenes");
@@ -2245,6 +2266,439 @@ function inplayscenes_admin_manage() {
 				);
 			}
 			exit;
+        }
+    }
+
+    // ÜBERTRAGEN
+    if ($run_module == 'rpgstuff' && $action_file == 'inplayscenes_updates') {
+
+        $trackersystem_list = array(
+            "" => "Altes Inplayszenensystem wählen",
+            "jule2" => "Inplaytracker 2.0 von sparks fly",
+            "jule3" => "Inplaytracker 3.0 von sparks fly",
+            "katja" => "Szenentracker von risuena"
+        );
+
+        // Add to page navigation
+        $page->add_breadcrumb_item("Inplayszenen übertragen", "index.php?module=rpgstuff-inplayscenes_updates");
+    
+        if ($mybb->get_input('action') == "" || !$mybb->get_input('action')) {
+
+            $page->output_header("Inplayszenen übertragen");
+    
+            if ($mybb->request_method == 'post') {
+
+                $selected_tracker = $mybb->get_input('trackersystem');
+
+                if (empty($selected_tracker)) {
+                    $errors[] = "Bitte wähle ein Trackersystem aus!";
+                }
+
+                if(empty($errors)) {
+                    // Inplaytracker 2.0 von sparks fly
+                    if ($selected_tracker == "jule2") {
+        
+                        $iport_update = array(
+                            'identification' => $db->escape_string('iport'),
+                            'title' => $db->escape_string('Ort'),
+                            'description' => $db->escape_string('Wo spielt deine Szene?'),
+                            'type' => $db->escape_string('text'),
+                            'options' => '',
+                            'required' => (int)1,
+                            'edit' => (int)1,
+                            'disporder' => (int)1,
+                            'allow_html' => (int)0,
+                            'allow_mybb' => (int)0,
+                            'allow_img' => (int)0,
+                            'allow_video' => (int)0,
+                        );
+        
+                        $ipdaytime_update = array(
+                            'identification' => $db->escape_string('ipdaytime'),
+                            'title' => $db->escape_string('Tageszeit'),
+                            'description' => $db->escape_string('Zu welcher Tageszeit spielt deine Szene?'),
+                            'type' => $db->escape_string('text'),
+                            'options' => '',
+                            'required' => (int)1,
+                            'edit' => (int)1,
+                            'disporder' => (int)2,
+                            'allow_html' => (int)0,
+                            'allow_mybb' => (int)0,
+                            'allow_img' => (int)0,
+                            'allow_video' => (int)0,
+                        );
+
+                        if ($db->insert_query("inplayscenes_fields", $iport_update) && $db->insert_query("inplayscenes_fields", $ipdaytime_update)) {
+        
+                            $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD iport TEXT NOT NULL;");
+                            $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD ipdaytime TEXT NOT NULL;");
+        
+                            // Prüfe die Einstellung inplaytracker_timeformat
+                            $timeformat = $mybb->settings['inplaytracker_timeformat'];
+        
+                            // Wenn timeformat auf 1 steht, hole die Monatsnamen
+                            if ($timeformat == 1) {
+                                $months_array = explode(',', str_replace(", ", ",", $mybb->settings['inplaytracker_months'])); // in Array umwandeln
+                            }
+        
+                            $threads_result = $db->query("SELECT * FROM ".TABLE_PREFIX."threads
+                            WHERE partners IS NOT NULL 
+                            AND partners != ''
+                            ");
+
+                            $all_successful = true;
+                            while ($thread = $db->fetch_array($threads_result)) {
+        
+                                $tid = $thread['tid'];
+                                $partners = $db->escape_string($thread['partners']);
+                                $postorder = $db->escape_string($thread['postorder']);
+                                $iport = $db->escape_string($thread['iport']);
+                                $ipdaytime = $db->escape_string($thread['ipdaytime']);
+                                $trigger_warning = '';
+                                $relevant = 1;
+        
+                                switch ($thread['openscene']) {
+                                    case -1:
+                                        $openscene = 0;
+                                        break;
+                                    case 0:
+                                        $openscene = 1;
+                                        break;
+                                    case 1:
+                                        $openscene = 2;
+                                        break;
+                                    default:
+                                        $openscene = 0;
+                                }
+        
+                                $ipdate = $thread['ipdate'];
+                                if ($timeformat == 1) { // eigen Zeitrechnung
+
+                                    if (preg_match('/^(\d+)\s+([A-Za-z\s]+)\s+(\d{4})$/', $ipdate, $matches)) {
+                                        $day = $matches[1];   
+                                        $monthname = trim($matches[2]); 
+                                        $year = $matches[3]; 
+                                    }
+                                    $month = array_search($monthname, $months_array) + 1; 
+        
+                                    if ($month === false) {
+                                        $month = 1;                          
+                                    }
+        
+                                    $date = $year."-".$month."-".$day;
+                                } elseif (is_numeric($ipdate)) { // Timestamp
+                                    $date = date('Y-m-d', $ipdate);
+                                } else { // Datum
+                                    $date = $ipdate;                        
+                                }
+        
+                                $partners_array = explode(',', $partners);
+                                $partners_usernames = array();            
+
+                                foreach ($partners_array as $partner_uid) {
+        
+                                    $partner_uid = trim($partner_uid);
+
+                                    $user_result = $db->query("SELECT username FROM ".TABLE_PREFIX."users 
+                                    WHERE uid = '".$partner_uid."'
+                                    ");
+
+                                    if ($db->num_rows($user_result) > 0) {
+                                        $user = $db->fetch_array($user_result);
+                                        $partners_usernames[] = $db->escape_string($user['username']);
+                                    } else {
+                                        $partners_usernames[] = 'Gast';
+                                    }
+                                }    
+
+                                $partners_username = implode(',', $partners_usernames);
+        
+                                $new_scene = array(
+                                    'tid' => (int)$tid,
+                                    'partners' => $partners,
+                                    'partners_username' => $partners_username,
+                                    'date' => $date,
+                                    'trigger_warning' => $trigger_warning,
+                                    'openscene' => (int)$openscene,                                
+                                    'postorder' => (int)$postorder,
+                                    'iport' => $iport,
+                                    'ipdaytime' => $ipdaytime,
+                                    'relevant' => $relevant,                        
+                                );
+        
+                                if (!$db->insert_query("inplayscenes", $new_scene)) {
+                                    $all_successful = false;
+                                    break; 
+                                }
+                            }
+        
+                            if ($all_successful) {
+                                // Log admin action           
+                                log_admin_action("Inplayszenen übertragen");
+        
+                                flash_message("Alle Szenen wurden erfolgreich übertragen. Du kannst nun das alte Trackersystem entfernen.", 'success');
+                                admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
+                            } else {
+                                flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                            }
+                        } else {
+                            flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                        }
+                    } 
+                    // Inplaytracker 3.0 von sparks fly
+                    else if ($selected_tracker == "jule3") {
+        
+                        $location_update = array(
+                            'identification' => $db->escape_string('location'),
+                            'title' => $db->escape_string('Ort'),
+                            'description' => $db->escape_string('Wo spielt deine Szene?'),
+                            'type' => $db->escape_string('text'),
+                            'options' => '',
+                            'required' => (int)1,
+                            'edit' => (int)1,
+                            'disporder' => (int)1,
+                            'allow_html' => (int)0,
+                            'allow_mybb' => (int)0,
+                            'allow_img' => (int)0,
+                            'allow_video' => (int)0,
+                        );
+        
+                        $shortdesc_update = array(
+                            'identification' => $db->escape_string('shortdesc'),
+                            'title' => $db->escape_string('Szenenbeschreibung (optional)'),
+                            'description' => $db->escape_string('Beschreibe in maximal 140 Zeichen, worum es in dieser Szene geht.'),
+                            'type' => $db->escape_string('textarea'),
+                            'options' => '',
+                            'required' => (int)1,
+                            'edit' => (int)1,
+                            'disporder' => (int)2,
+                            'allow_html' => (int)0,
+                            'allow_mybb' => (int)0,
+                            'allow_img' => (int)0,
+                            'allow_video' => (int)0,
+                        );
+        
+                        if ($db->insert_query("inplayscenes_fields", $location_update) && $db->insert_query("inplayscenes_fields", $shortdesc_update)) {
+                    
+                            $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD location TEXT NOT NULL;");
+                            $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD shortdesc TEXT NOT NULL;");
+        
+                            $scenes_result = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes");
+        
+                            $all_successful = true;
+                            while ($scene = $db->fetch_array($scenes_result)) {
+                                $tid = $scene['tid'];
+                                $location = $db->escape_string($scene['location']);
+                                $shortdesc = $db->escape_string($scene['shortdesc']);
+                                $trigger_warning = '';  
+                                $postorder = 1; 
+                                $relevant = 1; 
+              
+                                $date = date('Y-m-d', $scene['date']);
+              
+                                if ($scene['openscene'] == 1) {
+                                    $openscene = 2;
+                                } else {
+                                    $openscene = 0;
+                                }
+              
+                                $partners_result = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes_partners 
+                                WHERE tid = '".$tid."' 
+                                ORDER BY spid ASC
+                                ");
+              
+                                $partners_array = array();
+                                $partners_usernames = array();
+              
+                                while ($partner = $db->fetch_array($partners_result)) {
+                                    $uid = (int)$partner['uid'];
+                                    $partners_array[] = $uid;
+              
+                                    $user_result = $db->query("SELECT username FROM ".TABLE_PREFIX."users 
+                                    WHERE uid = '".$uid."'
+                                    ");
+                                    if ($db->num_rows($user_result) > 0) {
+                                        $user = $db->fetch_array($user_result);
+                                        $partners_usernames[] = $db->escape_string($user['username']);
+                                    } else {
+                                        $partners_usernames[] = 'Gast';
+                                    }
+                                }
+                                $partners = implode(',', $partners_array);
+                                $partners_username = implode(',', $partners_usernames);
+        
+                                $new_scene = array(
+                                    'tid' => (int)$tid,
+                                    'partners' => $partners,
+                                    'partners_username' => $partners_username,
+                                    'date' => $date,
+                                    'trigger_warning' => $trigger_warning,
+                                    'openscene' => (int)$openscene,
+                                    'postorder' => (int)$postorder,
+                                    'shortdesc' => $shortdesc,
+                                    'location' => $location,
+                                    'relevant' => $relevant,
+                                );
+              
+                                if (!$db->insert_query("inplayscenes", $new_scene)) {
+                                    $all_successful = false;  
+                                    break;  
+                                }
+                            }
+        
+                            if ($all_successful) {
+                                // Log admin action           
+                                log_admin_action("Inplayszenen übertragen");
+        
+                                flash_message("Alle Szenen wurden erfolgreich übertragen. Du kannst nun das alte Trackersystem entfernen.", 'success');
+                                admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
+                            } else {
+                                flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                            }
+                        } else {
+                            flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                        }
+                    }
+                    // Szenentracker von Katja
+                    else if ($selected_tracker == "katja") {
+
+                        $location_update = array(
+                            'identification' => $db->escape_string('place'),
+                            'title' => $db->escape_string('Ort'),
+                            'description' => $db->escape_string('Hier den Ort eintragen. Wo findet die Szene statt?'),
+                            'type' => $db->escape_string('text'),
+                            'options' => '',
+                            'required' => (int)1,
+                            'edit' => (int)1,
+                            'disporder' => (int)1,
+                            'allow_html' => (int)0,
+                            'allow_mybb' => (int)0,
+                            'allow_img' => (int)0,
+                            'allow_video' => (int)0,
+                        );
+        
+                        $time_update = array(
+                            'identification' => $db->escape_string('time'),
+                            'title' => $db->escape_string('Tageszeit'),
+                            'description' => $db->escape_string('Wann spielt die Szene?'),
+                            'type' => $db->escape_string('text'),
+                            'options' => '',
+                            'required' => (int)1,
+                            'edit' => (int)1,
+                            'disporder' => (int)2,
+                            'allow_html' => (int)0,
+                            'allow_mybb' => (int)0,
+                            'allow_img' => (int)0,
+                            'allow_video' => (int)0,
+                        );
+        
+                        if ($db->insert_query("inplayscenes_fields", $location_update) && $db->insert_query("inplayscenes_fields", $time_update)) {
+        
+                            $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD time TEXT NOT NULL;");
+                            $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD place TEXT NOT NULL;");
+        
+                            $scenes_result = $db->query("SELECT * FROM ".TABLE_PREFIX."threads 
+                            WHERE scenetracker_user IS NOT NULL 
+                            AND scenetracker_user != ''
+                            ");
+        
+                            $all_successful = true; 
+                            while ($scene = $db->fetch_array($scenes_result)) {
+            
+                                $tid = (int)$scene['tid'];
+                                $place = $db->escape_string($scene['scenetracker_place']);
+                                $trigger_warning = $db->escape_string($scene['scenetracker_trigger']);
+                                $partners_username = $db->escape_string($scene['scenetracker_user']);
+                                $openscene = 0; 
+                                $postorder = 1; 
+                                $relevant = 1;
+
+                                $date = date('Y-m-d', strtotime($scene['scenetracker_date']));
+        
+                                if (!empty($scene['scenetracker_time_text'])) {
+                                    $time = $db->escape_string($scene['scenetracker_time_text']);
+                                } else {
+                                    $time = date('H:i', strtotime($scene['scenetracker_date']));    
+                                }
+        
+                                $partners_result = $db->query("SELECT * FROM ".TABLE_PREFIX."scenetracker
+                                WHERE tid = '$tid' 
+                                ORDER BY id ASC
+                                ");
+        
+                                $partners_array = array();
+                                while ($partner = $db->fetch_array($partners_result)) {
+                                    $partners_array[] = (int)$partner['uid'];    
+                                }
+                                $partners = implode(',', $partners_array);
+        
+                                $new_scene = array(
+                                    'tid' => (int)$tid,
+                                    'partners' => $partners,
+                                    'partners_username' => $partners_username,
+                                    'date' => $date,
+                                    'trigger_warning' => $trigger_warning,
+                                    'openscene' => (int)$openscene,
+                                    'postorder' => (int)$postorder,
+                                    'relevant' => (int)$relevant,
+                                    'place' => $place,
+                                    'time' => $time,
+                                );
+              
+                                if (!$db->insert_query("inplayscenes", $new_scene)) {
+                                    $all_successful = false; 
+                                    break;  
+                                }    
+                            }
+        
+                            if ($all_successful) {
+                                // Log admin action           
+                                log_admin_action("Inplayszenen übertragen");
+        
+                                flash_message("Alle Szenen wurden erfolgreich übertragen. Du kannst nun das alte Trackersystem entfernen.", 'success');
+                                admin_redirect("index.php?module=rpgstuff-inplayscenes_updates");
+                            } else {
+                                flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                            }     
+                        } else {
+                            flash_message("Fehler beim Übertragen der Szenen. Bitte versuche es erneut", 'error');
+                        }
+                    }
+                }
+            }
+
+			// Show errors
+			if (isset($errors)) {
+				$page->output_inline_error($errors);
+			}
+    
+            // Form for selecting tracker system
+            $form = new Form("index.php?module=rpgstuff-inplayscenes_updates", "post", "", 1);
+            $form_container = new FormContainer("Inplayszenen übertragen");
+            echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
+  
+            $inplayscenes = $db->fetch_field($db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes"), "tid");
+
+            if ($inplayscenes == 0) {
+                $form_container->output_row(
+                    "Trackersystem", 
+                    "Welches Plugin hast du vorher benutzt? Bitte beachtet, das von einem unveränderten Plugin ausgegangen wird.",
+                    $form->generate_select_box('trackersystem', $trackersystem_list, $mybb->get_input('trackersystem'), array('id' => 'trackersystem')), 'trackersystem'
+                );
+            
+                $form_container->end();
+                $buttons[] = $form->generate_submit_button("Inplayszenen übertragen");
+                $form->output_submit_wrapper($buttons);
+            } else {
+                $form_container->output_cell("Die Inplayszenen wurden schon übertragen. Du kannst das alte Trackersystem deinstallieren.", array("colspan" => 5, 'style' => 'text-align: center;'));
+                $form_container->construct_row();
+
+                $form_container->end();
+            }
+
+            $form->end();
+            $page->output_footer();
+            exit;
         }
     }
 }
@@ -3770,7 +4224,7 @@ function inplayscenes_memberprofile() {
 
     $active_inplplayscenes = "";
     while($active = $db->fetch_array($activeinplplayscenes_query)) {
-        $active_inplplayscenes .= inplayscenes_profile_scene($active, $relevant_forums_archive, 'archiv');
+        $active_inplplayscenes .= inplayscenes_profile_scene($active, $relevant_forums_archive, '');
     }
 
     if (empty($active_inplplayscenes)) {
@@ -3789,7 +4243,7 @@ function inplayscenes_memberprofile() {
 
     $archive_inplplayscenes = "";
     while($archive = $db->fetch_array($archiveinplplayscenes_query)) {
-        $archive_inplplayscenes .= inplayscenes_profile_scene($archive, $relevant_forums_archive, 'archiv');
+        $archive_inplplayscenes .= inplayscenes_profile_scene($archive, $relevant_forums_archive, '');
     }
 
     if (empty($archive_inplplayscenes)) {
@@ -6391,7 +6845,7 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
             $status = $lang->inplayscenes_memberprofile_status_active;
         }
     } else {
-        $status = $lang->inplayscenes_memberprofile_status_close;
+        $status = "";
     }
 
     eval("\$result .= \"" . $templates->get("inplayscenes_memberprofile_scenes") . "\";");
