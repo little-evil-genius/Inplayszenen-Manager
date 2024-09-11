@@ -88,6 +88,15 @@ Standardmäßig werden im PDF nur die Charakternamen und das Szenendatum angezei
 <br>
 <b>Wichtig:</b> Für die PDF-Exportfunktion verwende ich die TCPDF-Bibliothek, die viele HTML-Befehle unterstützt, jedoch nur eingeschränkt CSS-Befehle. Daher sollten nur eher auf einfache HTML-Tags wie ```<br>``` oder ```<b>``` zurückgegriffen werden, um die Ausgabe korrekt zu gestalten.
 
+# Anwendung im Profil
+Im Profil werden die Inplayszenen in drei Kategorien unterteilt: normaler Inplaybereich, AU (Alternative Universen) und nicht relevante Szenen. Für die Darstellung der Inplayszenen gibt es drei verschiedene Möglichkeiten, die jeweils durch das Einfügen der entsprechenden Variable in das Template "inplayscenes_memberprofile" definiert wird:
+1. <b>Sortierung/Gruppierung nach Jahr und Monat (Standard):</b><br>
+Szenen werden nach Jahr und innerhalb des Jahres nach Monaten gruppiert. Um diese Ansicht zu verwenden, muss die Variable <b>{$allinplayscenes_year}</b> in das Template eingefügt werden.<br>
+2. <b>Klassische Darstellung mit aktiven und beendeten Inplayszenen:</b><br>
+In dieser Ansicht erfolgt die Unterteilung in aktive und beendete Szenen. Die Variablen <b>{$active_inplplayscenes}</b> (aktive Szenen) und <b>{$archive_inplplayscenes}</b> (beendete Szenen) müssen in das Template eingefügt werden. Zusätzlich ist es erforderlich, das Template "inplayscenes_memberprofile" anzupassen, z. B. um passende Überschriften oder andere Designanpassungen vorzunehmen.<br>
+3. <b>Reine Auflistung ohne Unterteilung/Gruppierung:</b><br>
+Für eine einfache, ungegliederte Auflistung aller Szenen kann die Variable <b>{$all_inplplayscenes}</b> verwendet werden.
+
 # Datenbank-Änderungen
 hinzugefügte Tabelle:
 - inplayscenes
