@@ -190,7 +190,9 @@ Alle Templates wurden größtenteils ohne Tabellen-Struktur gecodet. Das Layout 
 
 # Neues CSS - inplayqscenes.css
 Es wird automatisch in jedes bestehende und neue Design hinzugefügt. Man sollte es einfach einmal abspeichern - auch im Default. Sonst kann es passieren, dass es bei einem Update von MyBB entfernt wird.
-<blockquote>.inplayscenes-formular_input-row {
+<blockquote>
+	
+	.inplayscenes-formular_input-row {
         display: flex;
         flex-wrap: nowrap;
         justify-content: flex-start;
