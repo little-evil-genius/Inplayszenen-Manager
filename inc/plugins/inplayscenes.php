@@ -1607,6 +1607,7 @@ function inplayscenes_activate(){
 	find_replace_templatesets('showthread', '#'.preg_quote('{$newreply}').'#', '{$inplayscenes_add} {$newreply}');
 	find_replace_templatesets('showthread', '#'.preg_quote('{$newreply}').'#', '{$inplayscenes_edit} {$newreply}');
 	find_replace_templatesets('showthread', '#'.preg_quote('<tr><td id="posts_container">').'#', '{$inplayscenes_showthread} <tr><td id="posts_container">');
+	find_replace_templatesets('member_profile', '#'.preg_quote('{$bannedbit}').'#', '{$inplayscenes_memberprofile} {$bannedbit}');
 	
     // MyALERTS STUFF
     if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
@@ -1658,6 +1659,7 @@ function inplayscenes_deactivate(){
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_add}')."#i", '', 0);
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_edit}')."#i", '', 0);
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_showthread}')."#i", '', 0);
+	find_replace_templatesets("member_profile", "#".preg_quote('$inplayscenes_memberprofile')."#i", '', 0);
 
     // MyALERT STUFF
     if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
@@ -3657,6 +3659,22 @@ function inplayscenes_memberprofile() {
         $inplayscene['scenedate'] = $scenedate;
         $inplayscene['partnerusers'] = $partnerusers;
         $inplayscene['postorder'] = $postorder;
+    
+        $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
+    
+        while ($field = $db->fetch_array($fields_query)) {
+    
+            // Leer laufen lassen
+            $identification = "";
+            $value = "";
+    
+            // Mit Infos füllen
+            $identification = $field['identification'];
+            $value = $inplay[$identification];
+    
+            // Einzelne Variabeln
+            $inplayscene[$identification] = $value;
+        }
 
         if ($open_setting == 1) {
             $inplayscene['openscene'] = $sceneoptions[$inplay['openscene']];
