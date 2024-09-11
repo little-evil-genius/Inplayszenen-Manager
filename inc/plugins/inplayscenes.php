@@ -157,7 +157,7 @@ function inplayscenes_install(){
             'title' => 'Inplay-Archiv',
             'description' => 'Bei welchen Foren handelt es sich um das Inplay-Archiv? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
             'optionscode' => 'forumselect',
-            'value' => '64', // Default
+            'value' => '', // Default
             'disporder' => 2
         ),
 		'inplayscenes_excludedarea' => array(
@@ -1801,7 +1801,7 @@ function inplayscenes_admin_manage() {
             while ($field = $db->fetch_array($query_fields)) {
 
                 // Title + Beschreibung
-                $form_container->output_cell('<strong><a href="index.php?module=rpgstuff-inplayscenes&amp;action=edit&amp;ifid='.$field['ifid'].'">'.htmlspecialchars_uni($field['title']).'</a></strong><br><small>'.htmlspecialchars_uni($field['description']).'</small>');
+                $form_container->output_cell('<strong><a href="index.php?module=rpgstuff-inplayscenes&amp;action=edit&amp;ifid='.$field['ifid'].'">'.htmlspecialchars_uni($field['title']).'</a></strong> <small>'.htmlspecialchars_uni($field['identification']).'</small><br><small>'.htmlspecialchars_uni($field['description']).'</small>');
                 
                 // Pflichtfeld?
                 if ($field['required'] == 1) {
@@ -3591,6 +3591,14 @@ function inplayscenes_memberprofile() {
     $archiveplayforums = $inplay_archive.",".$sideplays_archive;
     $relevant_forums_archive = inplayscenes_get_relevant_forums($archiveplayforums);
 
+    // klassisch aktiv/beendet
+    $active_inplay = inplayscenes_get_relevant_forums($inplay_forum);
+    $relevant_forums_active_inplay = array_diff($active_inplay, $relevant_forums_sideplay);
+
+    $archive_inplay = inplayscenes_get_relevant_forums($inplay_archive);
+    $relevant_forums_archive_inplay = array_diff($archive_inplay, $relevant_forums_sideplay);
+
+
 	// Profil UID
 	$profileUID = $mybb->get_input('uid', MyBB::INPUT_INT);
 
@@ -3741,98 +3749,51 @@ function inplayscenes_memberprofile() {
     ORDER BY i.date DESC
     ");
 
-    $allinplplayscenes = "";
-    while($inplay = $db->fetch_array($allinplayscenes_query)) {
-
-        // Leer laufen lassen
-        $db_date = "";
-        $scenedate = "";
-        $status = "";
-        $partners_username = "";
-        $partners = "";
-        $usernames = "";
-        $uids = "";
-        $partnerusers = "";
-
-        // Mit Infos füllen
-        $db_date = strtotime($inplay['date']);
-        $scenedate = my_date("d.m.Y", $db_date);        
-        $subject = "";
-        $tid = "";
-        $pid = "";
-        $scenelink = "";
-
-        if (in_array($inplay['fid'], $relevant_forums_archive)) {
-            $status = $lang->inplayscenes_memberprofile_status_close;
-        } else {
-            $status = $lang->inplayscenes_memberprofile_status_active;
-        }
-
-        $partners_username = $inplay['partners_username'];
-        $partners = $inplay['partners'];
-    
-        $usernames = explode(",", $partners_username);
-        $uids = explode(",", $partners);
-    
-        $partners = [];
-        foreach ($uids as $key => $uid) {
-    
-            $tagged_user = get_user($uid);
-            if (!empty($tagged_user)) {
-                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
-                $taguser = build_profile_link($username, $uid);
-            } else {
-                $taguser = $usernames[$key];
-            }
-            $partners[] = $taguser;
-        }
-        $partnerusers = implode(" &#x26; ", $partners);
-
-        $postorder = $postorderoptions[$inplay['postorder']];
-        $subject = $inplay['subject'];
-        $tid = $inplay['tid'];
-        $pid = $inplay['firstpost'];
-        $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
-
-        // Variable für einzeln
-        $inplayscene = [];
-        $inplayscene['scenedate'] = $scenedate;
-        $inplayscene['partnerusers'] = $partnerusers;
-        $inplayscene['postorder'] = $postorder;
-    
-        $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
-    
-        while ($field = $db->fetch_array($fields_query)) {
-    
-            // Leer laufen lassen
-            $identification = "";
-            $value = "";
-    
-            // Mit Infos füllen
-            $identification = $field['identification'];
-            $value = $inplay[$identification];
-    
-            // Einzelne Variabeln
-            $inplayscene[$identification] = $value;
-        }
-    
-        if ($open_setting == 1) {
-            $inplayscene['openscene'] = $sceneoptions[$inplay['openscene']];
-        } else {
-            $inplayscene['openscene'] = "";
-        }
-    
-        if ($trigger_setting == 1) {
-            $inplayscene['trigger'] = $inplay['trigger_warning'];
-        } else {
-            $inplayscene['trigger'] = "";
-        }
-
-        eval("\$allinplplayscenes .= \"" . $templates->get("inplayscenes_memberprofile_scenes") . "\";");
+    $all_inplplayscenes = "";
+    while($allinplay = $db->fetch_array($allinplayscenes_query)) {
+        $all_inplplayscenes .= inplayscenes_profile_scene($allinplay, $relevant_forums_archive, 'archiv');
     }
 
-    if (empty($allinplplayscenes)) {
-        eval("\$allinplplayscenes = \"".$templates->get("inplayscenes_memberprofile_none")."\";");
+    if (empty($all_inplplayscenes)) {
+        eval("\$all_inplplayscenes = \"".$templates->get("inplayscenes_memberprofile_none")."\";");
+    }
+
+    // aktive Inplayszenen [nur gelistet]
+    $activeinplplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
+    LEFT JOIN ".TABLE_PREFIX."threads t 
+    ON (i.tid = t.tid) 
+    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    AND fid IN (".implode(',', $relevant_forums_active_inplay).")
+    AND relevant != 0
+    ORDER BY i.date DESC
+    ");
+
+    $active_inplplayscenes = "";
+    while($active = $db->fetch_array($activeinplplayscenes_query)) {
+        $active_inplplayscenes .= inplayscenes_profile_scene($active, $relevant_forums_archive, 'archiv');
+    }
+
+    if (empty($active_inplplayscenes)) {
+        eval("\$active_inplplayscenes = \"".$templates->get("inplayscenes_memberprofile_none")."\";");
+    }
+
+    // archivierte Inplayszenen [nur gelistet]
+    $archiveinplplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
+    LEFT JOIN ".TABLE_PREFIX."threads t 
+    ON (i.tid = t.tid) 
+    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    AND fid IN (".implode(',', $relevant_forums_archive_inplay).")
+    AND relevant != 0
+    ORDER BY i.date DESC
+    ");
+
+    $archive_inplplayscenes = "";
+    while($archive = $db->fetch_array($archiveinplplayscenes_query)) {
+        $archive_inplplayscenes .= inplayscenes_profile_scene($archive, $relevant_forums_archive, 'archiv');
+    }
+
+    if (empty($archive_inplplayscenes)) {
+        eval("\$archive_inplplayscenes = \"".$templates->get("inplayscenes_memberprofile_none")."\";");
     }
 
     $allsideplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
@@ -3845,92 +3806,7 @@ function inplayscenes_memberprofile() {
 
     $allsideplayscenes = "";
 	while($side = $db->fetch_array($allsideplayscenes_query)) {
-
-        // Leer laufen lassen
-        $db_date = "";
-        $scenedate = "";
-        $status = "";
-        $partners_username = "";
-        $partners = "";
-        $usernames = "";
-        $uids = "";
-        $partnerusers = "";
-        $subject = "";
-        $tid = "";
-        $pid = "";
-        $scenelink = "";
-
-        // Mit Infos füllen
-        $db_date = strtotime($side['date']);
-        $scenedate = my_date("d.m.Y", $db_date);
-
-        if (in_array($side['fid'], $relevant_forums_archive)) {
-            $status = $lang->inplayscenes_memberprofile_status_close;
-        } else {
-            $status = $lang->inplayscenes_memberprofile_status_active;
-        }
-
-        $partners_username = $side['partners_username'];
-        $partners = $side['partners'];
-    
-        $usernames = explode(",", $partners_username);
-        $uids = explode(",", $partners);
-    
-        $partners = [];
-        foreach ($uids as $key => $uid) {
-    
-            $tagged_user = get_user($uid);
-            if (!empty($tagged_user)) {
-                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
-                $taguser = build_profile_link($username, $uid);
-            } else {
-                $taguser = $usernames[$key];
-            }
-            $partners[] = $taguser;
-        }
-        $partnerusers = implode(" &#x26; ", $partners);
-
-        $postorder = $postorderoptions[$side['postorder']];
-        $subject = $side['subject'];
-        $tid = $side['tid'];
-        $pid = $side['firstpost'];
-        $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
-
-        // Variable für einzeln
-        $inplayscene = [];
-        $inplayscene['scenedate'] = $scenedate;
-        $inplayscene['partnerusers'] = $partnerusers;
-        $inplayscene['postorder'] = $postorder;
-    
-        $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
-    
-        while ($field = $db->fetch_array($fields_query)) {
-    
-            // Leer laufen lassen
-            $identification = "";
-            $value = "";
-    
-            // Mit Infos füllen
-            $identification = $field['identification'];
-            $value = $side[$identification];
-    
-            // Einzelne Variabeln
-            $inplayscene[$identification] = $value;
-        }
-    
-        if ($open_setting == 1) {
-            $inplayscene['openscene'] = $sceneoptions[$side['openscene']];
-        } else {
-            $inplayscene['openscene'] = "";
-        }
-    
-        if ($trigger_setting == 1) {
-            $inplayscene['trigger'] = $side['trigger_warning'];
-        } else {
-            $inplayscene['trigger'] = "";
-        }
-
-        eval("\$allsideplayscenes .= \"" . $templates->get("inplayscenes_memberprofile_scenes") . "\";");
+        $allsideplayscenes .= inplayscenes_profile_scene($side, $relevant_forums_archive, 'archiv');
     }
 
     if (empty($allsideplayscenes)) {
@@ -3946,92 +3822,7 @@ function inplayscenes_memberprofile() {
 
     $allnotrelevantscenes = "";
 	while($not = $db->fetch_array($allnotrelevantscenes_query)) {
-
-        // Leer laufen lassen
-        $db_date = "";
-        $scenedate = "";
-        $status = "";
-        $partners_username = "";
-        $partners = "";
-        $usernames = "";
-        $uids = "";
-        $partnerusers = "";
-        $subject = "";
-        $tid = "";
-        $pid = "";
-        $scenelink = "";
-
-        // Mit Infos füllen
-        $db_date = strtotime($not['date']);
-        $scenedate = my_date("d.m.Y", $db_date);
-
-        if (in_array($not['fid'], $relevant_forums_archive)) {
-            $status = $lang->inplayscenes_memberprofile_status_close;
-        } else {
-            $status = $lang->inplayscenes_memberprofile_status_active;
-        }
-
-        $partners_username = $not['partners_username'];
-        $partners = $not['partners'];
-    
-        $usernames = explode(",", $partners_username);
-        $uids = explode(",", $partners);
-    
-        $partners = [];
-        foreach ($uids as $key => $uid) {
-    
-            $tagged_user = get_user($uid);
-            if (!empty($tagged_user)) {
-                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
-                $taguser = build_profile_link($username, $uid);
-            } else {
-                $taguser = $usernames[$key];
-            }
-            $partners[] = $taguser;
-        }
-        $partnerusers = implode(" &#x26; ", $partners);
-
-        $postorder = $postorderoptions[$not['postorder']];
-        $subject = $not['subject'];
-        $tid = $not['tid'];
-        $pid = $not['firstpost'];
-        $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
-
-        // Variable für einzeln
-        $inplayscene = [];
-        $inplayscene['scenedate'] = $scenedate;
-        $inplayscene['partnerusers'] = $partnerusers;
-        $inplayscene['postorder'] = $postorder;
-    
-        $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
-    
-        while ($field = $db->fetch_array($fields_query)) {
-    
-            // Leer laufen lassen
-            $identification = "";
-            $value = "";
-    
-            // Mit Infos füllen
-            $identification = $field['identification'];
-            $value = $not[$identification];
-    
-            // Einzelne Variabeln
-            $inplayscene[$identification] = $value;
-        }
-    
-        if ($open_setting == 1) {
-            $inplayscene['openscene'] = $sceneoptions[$not['openscene']];
-        } else {
-            $inplayscene['openscene'] = "";
-        }
-    
-        if ($trigger_setting == 1) {
-            $inplayscene['trigger'] = $not['trigger_warning'];
-        } else {
-            $inplayscene['trigger'] = "";
-        }
-
-        eval("\$allnotrelevantscenes .= \"" . $templates->get("inplayscenes_memberprofile_scenes") . "\";");
+        $allnotrelevantscenes .= inplayscenes_profile_scene($not, $relevant_forums_archive);
     }
 
     if (empty($allnotrelevantscenes)) {
@@ -6488,4 +6279,122 @@ function inplayscenes_parser_fields($fieldvalue, $allow_html, $allow_mybb, $allo
     $value = $parser->parse_message($fieldvalue, $parser_array);
 
     return $value;
+}
+
+// PROFIL WHILE AUSGABE
+function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
+
+    global $db, $mybb, $lang, $templates;
+
+    $result = "";
+
+    // EINSTELLUNGEN
+    $trigger_setting = $mybb->settings['inplayscenes_trigger'];
+    $open_setting = $mybb->settings['inplayscenes_open'];
+
+	// Sprachdatei laden
+    $lang->load('inplayscenes');
+
+    $postorderoptions = [
+        '1' => $lang->inplayscenes_postorder_fixed,
+        '0' => $lang->inplayscenes_postorder_none
+    ];
+
+    $sceneoptions = [
+        '0' => $lang->inplayscenes_openscene_private,
+        '1' => $lang->inplayscenes_openscene_agreed,
+        '2' => $lang->inplayscenes_openscene_open
+    ];
+
+    // Leer laufen lassen
+    $db_date = "";
+    $scenedate = "";
+    $status = "";
+    $partners_username = "";
+    $partners = "";
+    $usernames = "";
+    $uids = "";
+    $partnerusers = "";
+    $subject = "";
+    $tid = "";
+    $pid = "";
+    $scenelink = "";
+
+    // Mit Infos füllen
+    $db_date = strtotime($scene['date']);
+    $scenedate = my_date("d.m.Y", $db_date);
+
+    $partners_username = $scene['partners_username'];
+    $partners = $scene['partners'];
+
+    $usernames = explode(",", $partners_username);
+    $uids = explode(",", $partners);
+
+    $partners = [];
+    foreach ($uids as $key => $uid) {
+
+        $tagged_user = get_user($uid);
+        if (!empty($tagged_user)) {
+            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            $taguser = build_profile_link($username, $uid);
+        } else {
+            $taguser = $usernames[$key];
+        }
+        $partners[] = $taguser;
+    }
+    $partnerusers = implode(" &#x26; ", $partners);
+
+    $postorder = $postorderoptions[$scene['postorder']];
+    $subject = $scene['subject'];
+    $tid = $scene['tid'];
+    $pid = $scene['firstpost'];
+    $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+
+    // Variable für einzeln
+    $inplayscene = [];
+    $inplayscene['scenedate'] = $scenedate;
+    $inplayscene['partnerusers'] = $partnerusers;
+    $inplayscene['postorder'] = $postorder;
+
+    $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
+
+    while ($field = $db->fetch_array($fields_query)) {
+
+        // Leer laufen lassen
+        $identification = "";
+        $value = "";
+
+        // Mit Infos füllen
+        $identification = $field['identification'];
+        $value = $scene[$identification];
+
+        // Einzelne Variabeln
+        $inplayscene[$identification] = $value;
+    }
+
+    if ($open_setting == 1) {
+        $inplayscene['openscene'] = $sceneoptions[$scene['openscene']];
+    } else {
+        $inplayscene['openscene'] = "";
+    }
+
+    if ($trigger_setting == 1) {
+        $inplayscene['trigger'] = $scene['trigger_warning'];
+    } else {
+        $inplayscene['trigger'] = "";
+    }
+
+    if (!empty($mode)) {
+        if (in_array($scene['fid'], $archive_forums)) {
+            $status = $lang->inplayscenes_memberprofile_status_close;
+        } else {
+            $status = $lang->inplayscenes_memberprofile_status_active;
+        }
+    } else {
+        $status = $lang->inplayscenes_memberprofile_status_close;
+    }
+
+    eval("\$result .= \"" . $templates->get("inplayscenes_memberprofile_scenes") . "\";");
+
+    return $result;
 }
