@@ -1659,7 +1659,7 @@ function inplayscenes_deactivate(){
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_add}')."#i", '', 0);
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_edit}')."#i", '', 0);
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_showthread}')."#i", '', 0);
-	find_replace_templatesets("member_profile", "#".preg_quote('$inplayscenes_memberprofile')."#i", '', 0);
+	find_replace_templatesets("member_profile", "#".preg_quote('{$inplayscenes_memberprofile}')."#i", '', 0);
 
     // MyALERT STUFF
     if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
