@@ -24,6 +24,7 @@ Bei Account-Löschung werden betroffene Inplayszenen entsprechend in das Archiv 
 - <b>Benachrichtigungen:</b> Mitglieder:innen können wählen, ob sie Benachrichtigungen über MyAlerts oder eine private Nachricht erhalten möchten.
 
 # Vorrausetzung
+- Das ACP Modul <a href="https://github.com/little-evil-genius/rpgstuff_modul" target="_blank">RPG Stuff</a> <b>muss</b> vorhanden sein.
 - Der <a href="https://www.mybb.de/erweiterungen/18x/plugins-verschiedenes/enhanced-account-switcher/" target="_blank">Accountswitcher</a> von doylecc <b>muss</b> installiert sein.
 - Inplay-Bereich & dazugehöriges Archiv
 - alternativen Universen (AU)/"was wäre, wenn..."-Bereich & dazugehöriges Archiv
