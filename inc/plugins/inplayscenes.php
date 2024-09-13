@@ -27,6 +27,7 @@ $plugins->add_hook("admin_rpgstuff_menu", "inplayscenes_admin_rpgstuff_menu");
 $plugins->add_hook("admin_rpgstuff_menu_updates", "inplayscenes_admin_rpgstuff_menu_updates");
 $plugins->add_hook("admin_load", "inplayscenes_admin_manage");
 $plugins->add_hook('admin_rpgstuff_update_stylesheet', 'inplayscenes_admin_update_stylesheet');
+$plugins->add_hook('admin_rpgstuff_update_plugin', 'inplayscenes_admin_update_plugin');
 $plugins->add_hook('newthread_start', 'inplayscenes_newthread_start');
 $plugins->add_hook("datahandler_post_validate_thread", "inplayscenes_validate_newthread");
 $plugins->add_hook('newthread_do_newthread_end', 'inplayscenes_do_newthread');
@@ -74,10 +75,16 @@ function inplayscenes_info(){
 // Diese Funktion wird aufgerufen, wenn das Plugin installiert wird (optional).
 function inplayscenes_install(){
     
-    global $db, $cache, $mybb, $lang;
+    global $db, $cache, $config, $lang;
 
     // SPRACHDATEI
     $lang->load("inplayscenes");
+
+    // RPG Stuff Modul muss vorhanden sein
+    if (!file_exists(MYBB_ROOT.$config['admin_dir']."/admin/modules/rpgstuff/module_meta.php")) {
+		flash_message($lang->inplayscenes_error_rpgstuff, 'error');
+		admin_redirect('index.php?module=config-plugins');
+	}
 
     // Accountswitcher muss vorhanden sein
     if (!function_exists('accountswitcher_is_installed')) {
@@ -85,54 +92,8 @@ function inplayscenes_install(){
 		admin_redirect('index.php?module=config-plugins');
 	}
 
-    // DATENBANKEN ERSTELLEN
-    $db->query("CREATE TABLE ".TABLE_PREFIX."inplayscenes (
-        `isid` int(10) NOT NULL AUTO_INCREMENT, 
-        `tid` int(11) unsigned,
-        `partners` VARCHAR(1500),
-        `partners_username` VARCHAR(2500),
-        `date` date,
-        `trigger_warning` VARCHAR(500),
-        `openscene` int(1) unsigned NOT NULL DEFAULT '0',
-        `postorder` int(1) unsigned NOT NULL DEFAULT '1',
-        `relevant` int(1) unsigned NOT NULL DEFAULT '1',
-        PRIMARY KEY(`isid`),
-        KEY `isid` (`isid`)
-        )
-        ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
-    ");
-
-    $db->query("CREATE TABLE ".TABLE_PREFIX."inplayscenes_fields (
-        `ifid` int(10) NOT NULL AUTO_INCREMENT, 
-        `identification` VARCHAR(250) NOT NULL,
-        `title` VARCHAR(250) NOT NULL,
-        `description` VARCHAR(500),
-        `type` VARCHAR(250) NOT NULL,
-        `options` VARCHAR(500),
-        `required` int(1) NOT NULL DEFAULT '0',
-        `edit` int(1) NOT NULL DEFAULT '0',
-        `disporder` int(5) NOT NULL DEFAULT '0',
-        `allow_html` int(1) NOT NULL DEFAULT '0',
-        `allow_mybb` int(1) NOT NULL DEFAULT '0',
-        `allow_img` int(1) NOT NULL DEFAULT '0',
-        `allow_video` int(1) NOT NULL DEFAULT '0',
-        PRIMARY KEY(`ifid`),
-        KEY `ifid` (`ifid`)
-        )
-        ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
-    ");
-
-    // DATENBANKSPALTEN => USERS
-    // Benachrichtigungssystem
-    if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
-        $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '1';");
-    } else {
-        $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '0';");
-    }
-    // Posterinnerung Tage
-    $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_days` int(5) unsigned NOT NULL DEFAULT '0';");
-    // Posterinnerung Einstellung
-    $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_status` int(1) unsigned NOT NULL DEFAULT '1';");
+    // DATENBANKTABELLEN UND FELDER
+    inplayscenes_database();
 
     // EINSTELLUNGEN HINZUFÜGEN
     $maxdisporder = $db->fetch_field($db->query("SELECT MAX(disporder) FROM ".TABLE_PREFIX."settinggroups"), "MAX(disporder)");
@@ -143,110 +104,10 @@ function inplayscenes_install(){
         'disporder'     => $maxdisporder+1,
         'isdefault'     => 0
     );
-        
-    $gid = $db->insert_query("settinggroups", $setting_group); 
+    $db->insert_query("settinggroups", $setting_group);
 
-    $setting_array = array(
-		'inplayscenes_inplayarea' => array(
-			'title' => 'Inplay-Bereich',
-            'description' => 'Bei welchen Foren handelt es sich um den Inplay-Bereich? Es reicht aus, die übergeordneten Kategorien zu markieren.',
-            'optionscode' => 'forumselect',
-            'value' => '', // Default
-            'disporder' => 1
-		),
-        'inplayscenes_archive' => array(
-            'title' => 'Inplay-Archiv',
-            'description' => 'Bei welchen Foren handelt es sich um das Inplay-Archiv? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
-            'optionscode' => 'forumselect',
-            'value' => '', // Default
-            'disporder' => 2
-        ),
-		'inplayscenes_excludedarea' => array(
-			'title' => 'ausgeschlossene Foren',
-            'description' => 'Gibt es Foren, die innerhalb der ausgewählten Kategorien liegen, aber nicht beachtet werden sollen (z.B. Communication)?',
-            'optionscode' => 'forumselect',
-            'value' => '', // Default
-            'disporder' => 3
-		),
-		'inplayscenes_sideplays' => array(
-			'title' => 'AU-Szenen-Bereich',
-            'description' => 'Bei welchen Foren handelt es sich um den alternative Universum Bereich? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
-            'optionscode' => 'forumselect',
-            'value' => '', // Default
-            'disporder' => 4
-		),
-		'inplayscenes_sideplays_archive' => array(
-			'title' => 'AU-Szenen-Archiv',
-            'description' => 'Bei welchen Foren handelt es sich um das Archiv für das alternative Universum? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
-            'optionscode' => 'forumselect',
-            'value' => '', // Default
-            'disporder' => 5
-		),
-        'inplayscenes_open' => array(
-            'title' => 'Szenenarten',
-            'description' => 'Soll es die Möglichkeit geben für verschiedene Szenenarten? Zur Auswahl stehen: privat, nach Absprache oder offen.',
-            'optionscode' => 'yesno',
-            'value' => '1', // Default
-            'disporder' => 6
-        ),
-        'inplayscenes_trigger' => array(
-            'title' => 'Triggerwarnungen',
-            'description' => 'Sollen User ein Feld ausfüllen können, in welchem sie zusätzlich Triggerthemen angeben können, die in der Szene vorkommen können?',
-            'optionscode' => 'yesno',
-            'value' => '1', // Default
-            'disporder' => 7
-        ),
-        'inplayscenes_information_thread' => array(
-            'title' => 'Szeneninformationen: Showthread',
-            'description' => 'Sollen im Template Showthread Szeneinformation angezeigt werden?',
-            'optionscode' => 'yesno',
-            'value' => '1', // Default
-            'disporder' => 8
-        ),
-        'inplayscenes_information_posts' => array(
-            'title' => 'Szeneninformationen: Postbit',
-            'description' => 'Sollen in den Templates Postbit und Postbit_Classic Szeneinformation angezeigt werden?',
-            'optionscode' => 'yesno',
-            'value' => '1', // Default
-            'disporder' => 9
-        ),
-        'inplayscenes_allscene' => array(
-            'title' => 'Übersicht aller Inplayszenen',
-            'description' => 'Soll es eine zentrale Übersicht aller Inplayszenen des Forums geben, die mit verschiedenen Filtern durchsucht und gefiltert werden können?',
-            'optionscode' => 'yesno',
-            'value' => '1', // Default
-            'disporder' => 10
-        ),
-        'inplayscenes_nextuser' => array(
-            'title' => 'Anzeige vom nächster Poster',
-            'description' => 'Wie soll auf der Übersichtsseite gezeigt werden, dass man selbst nicht in der Szene dran ist?',
-            'optionscode' => 'select\n0=Username vom nächsten Charakter\n1=Einfaches - du bist nicht dran\n2=Spitzname vom nächsten Mitglied',
-            'value' => '0', // Default
-            'disporder' => 11
-        ),
-        'inplayscenes_playername' => array(
-            'title' => 'Spitzname',
-            'description' => 'Wie lautet die FID / der Identifikator von dem Profilfeld/Steckbrieffeld für den Spitznamen?<br>
-			<b>Hinweis:</b> Bei klassischen Profilfeldern muss eine Zahl eintragen werden. Bei dem Steckbrief-Plugin von Risuena muss der Name/Identifikator des Felds eingetragen werden.',
-            'optionscode' => 'text',
-            'value' => '4', // Default
-            'disporder' => 12
-        ),
-        'inplayscenes_inactive_scenes' => array(
-            'title' => 'inaktive Szenen',
-            'description' => 'Ab wie vielen Monaten, ohne Post gelten Szenen als inaktiv? Inaktive Szenen werden automatisch ins Archiv verschoben. AU-Szenen sind nicht davon betroffen. (0 = schließt die Funktion aus)',
-            'optionscode' => 'numeric',
-            'value' => '0', // Default
-            'disporder' => 13
-        ),
-   
-    );
-        
-    foreach($setting_array as $name => $setting){
-        $setting['name'] = $name;
-        $setting['gid']  = $gid;
-        $db->insert_query('settings', $setting);  
-    }
+    // Einstellungen
+    inplayscenes_settings();
     rebuild_settings();
 
 	// Task hinzufügen
@@ -265,7 +126,6 @@ function inplayscenes_install(){
         'locked' => 1
     );
     $db->insert_query('tasks', $inplayscenesTask);
-
     $cache->update_tasks();
 
     // TEMPLATES ERSTELLEN
@@ -274,1019 +134,13 @@ function inplayscenes_install(){
         "prefix" => "inplayscenes",
         "title" => $db->escape_string("Inplayszenen-Manager"),
     );
-
     $db->insert_query("templategroups", $templategroup);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_counter',
-        'template'	=> $db->escape_string('<li><a href="misc.php?action=inplayscenes">{$lang->inplayscenes}</a> ({$allinplayscenes_open}/{$allinplayscenes})</li>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_editscene',
-        'template'	=> $db->escape_string('<html>
-        <head>
-        <title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_editscene}</title>
-		{$headerinclude}
-        </head>
-        <body>
-		{$header}
-		{$inplayscenes_edit_error}
-		<div class="tborder">
-			<div class="thead">{$lang->inplayscenes_editscene}</div>
-			<div class="trow1">
-				<form action="misc.php?action=do_editinplayscenes&tid={$tid}" method="post">
-					<div class="inplayscenes-formular_input-row">
-						<div class="inplayscenes-formular_input-desc">
-							<b>{$lang->inplayscenes_fields_partners}</b>
-							<div class="smalltext">
-								{$lang->inplayscenes_fields_partners_desc}
-							</div>
-						</div>
-						<div class="inplayscenes-formular_input-input">
-							<input type="text" class="textbox" name="characters" id="characters" maxlength="1155" value="{$characters}" />
-						</div>
-					</div>
-
-					<div class="inplayscenes-formular_input-row">
-						<div class="inplayscenes-formular_input-desc">
-							<b>{$lang->inplayscenes_fields_scenesetting}</b>
-							<div class="smalltext">
-								{$lang->inplayscenes_fields_scenesetting_desc}
-							</div>
-						</div>
-						<div class="inplayscenes-formular_input-input">
-							{$postorder_select} {$openscene_select}
-						</div>
-					</div>
-
-					<div class="inplayscenes-formular_input-row">
-						<div class="inplayscenes-formular_input-desc">
-							<b>{$lang->inplayscenes_fields_date}</b>
-							<div class="smalltext">
-								{$lang->inplayscenes_fields_date_desc}
-							</div>
-						</div>
-						<div class="inplayscenes-formular_input-input">
-							<input type="date" name="date" class="textbox" value="{$date}" />
-							<div class="smalltext">{$lang->inplayscenes_fields_date_hint}</div>
-						</div>
-					</div>
-					
-					{$own_inplayscenesfields}
-					{$trigger_warning}
-
-					<div class="inplayscenes-formular_button">
-						<input type="submit" name="do_editinplayscenes" value="{$lang->inplayscenes_editscene_button}" class="button" />
-					</div>
-				</form>
-			</div>
-		</div>
-		{$footer}
-        </body>
-        </html>
-        <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
-        <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
-        <script type="text/javascript">
-        <!--
-        if(use_xmlhttprequest == "1")
-        {
-        MyBB.select2();
-        $("#characters").select2({
-        placeholder: "{$lang->inplayscenes_search_character}",
-        minimumInputLength: 2,
-        maximumSelectionSize: \'\',
-        multiple: true,
-        ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
-        url: "xmlhttp.php?action=get_users",
-        dataType: \'json\',
-        data: function (term, page) {
-        return {
-        query: term, // search term
-        };
-        },
-        results: function (data, page) { // parse the results into the format expected by Select2.
-        // since we are using custom formatting functions we do not need to alter remote JSON data
-        return {results: data};
-        }
-        },
-        initSelection: function(element, callback) {
-        var query = $(element).val();
-        if (query !== "") {
-        var newqueries = [];
-        exp_queries = query.split(",");
-        $.each(exp_queries, function(index, value ){
-        if(value.replace(/\s/g, \'\') != "")
-        {
-        var newquery = {
-        id: value.replace(/,\s?/g, ","),
-        text: value.replace(/,\s?/g, ",")
-        };
-        newqueries.push(newquery);
-        }
-        });
-        callback(newqueries);
-        }
-        }
-        })
-        }
-        // -->
-        </script>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_editscene_fields',
-        'template'	=> $db->escape_string('<div class="inplayscenes-formular_input-row">
-        <div class="inplayscenes-formular_input-desc">
-		<b>{$title}</b>
-		<div class="smalltext">
-			{$description}
-		</div>
-        </div>
-        <div class="inplayscenes-formular_input-input">
-		{$code}
-        </div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_forumdisplay',
-        'template'	=> $db->escape_string('<div class="smalltext">
-        <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
-        <b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
-        {$triggerwarning}
-        {$inplayscenesfields}
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_forumdisplay_fields',
-        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_memberprofile',
-        'template'	=> $db->escape_string('<fieldset>
-        <div class="thead">{$lang->inplayscenes_memberprofile}</div>	
-        <div class="inplayscenes_memberprofile">
-		<div class="inplayscenes_memberprofile-mainplays">
-			{$allinplayscenes_year}
-		</div>
-		<div class="inplayscenes_memberprofile-sideplays">
-			<div class="inplayscenes_memberprofile-auplays">
-				<h3>{$lang->inplayscenes_memberprofile_au}</h3>
-				{$allsideplayscenes}
-			</div>
-			<div class="inplayscenes_memberprofile-out">
-				<h3>{$lang->inplayscenes_memberprofile_notrelevant}</h3>
-				{$allnotrelevantscenes}
-			</div>
-		</div>		
-        </div>
-        </fieldset><br>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_memberprofile_month',
-        'template'	=> $db->escape_string('<div class="tcat">{$monthname}</div>{$scenes}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_memberprofile_none',
-        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$lang->inplayscenes_memberprofile_none}</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_memberprofile_scenes',
-        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$scenedate} {$status}  - <a href="{$scenelink}">{$subject}</a><br><span class="smalltext">{$partnerusers}</span></div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_memberprofile_year',
-        'template'	=> $db->escape_string('<div class="thead">{$year}</div>{$scenes_by_month}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_newthread',
-        'template'	=> $db->escape_string('<tr>
-        <td class="trow1" width="20%">
-		<strong>{$lang->inplayscenes_fields_partners}</strong>
-		<div class="smalltext">{$lang->inplayscenes_fields_partners_desc}</div>
-        </td>
-        <td class="trow1">
-		<span class="smalltext">
-			<input type="text" class="textbox" name="characters" id="characters" size="40" maxlength="1155" value="{$characters}" style="min-width: 347px; max-width: 100%;" /> 
-			<br>
-			{$lang->inplayscenes_fields_partners_hint}
-		</span> 
-        </td>
-        </tr>
-        <tr>
-        <td class="trow1" width="20%">
-		<strong>{$lang->inplayscenes_fields_scenesetting}</strong>
-		<div class="smalltext">{$lang->inplayscenes_fields_scenesetting_desc}</div>
-        </td>
-        <td class="trow1">
-		{$postorder_select} {$openscene_select}
-        </td>
-        </tr>
-        <tr>
-        <td class="trow1" width="20%"><strong>{$lang->inplayscenes_fields_date}</strong>
-		<div class="smalltext">{$lang->inplayscenes_fields_date_desc}</div>
-        </td>
-        <td class="trow1">
-        <span class="smalltext">
-			<input type="date" name="date" class="textbox" value="{$date}" \>		
-			<br>
-			{$lang->inplayscenes_fields_date_hint}
-		</span>		
-        </td>	
-        </tr>
-
-        {$own_inplayscenesfields}
-        {$trigger_warning}
-
-        <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
-        <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
-        <script type="text/javascript">
-        <!--
-        if(use_xmlhttprequest == "1")
-        {
-		MyBB.select2();
-		$("#characters").select2({
-			placeholder: "{$lang->inplayscenes_search_character}",
-			minimumInputLength: 2,
-			maximumSelectionSize: \'\',
-			multiple: true,
-			ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
-				url: "xmlhttp.php?action=get_users",
-				dataType: \'json\',
-				data: function (term, page) {
-					return {
-						query: term, // search term
-					};
-				},
-				results: function (data, page) { // parse the results into the format expected by Select2.
-					// since we are using custom formatting functions we do not need to alter remote JSON data
-					return {results: data};
-				}
-			},
-			initSelection: function(element, callback) {
-				var query = $(element).val();
-				if (query !== "") {
-					var newqueries = [];
-					exp_queries = query.split(",");
-					$.each(exp_queries, function(index, value ){
-						if(value.replace(/\s/g, \'\') != "")
-						{
-							var newquery = {
-								id: value.replace(/,\s?/g, ","),
-								text: value.replace(/,\s?/g, ",")
-							};
-							newqueries.push(newquery);
-						}
-					});
-					callback(newqueries);
-				}
-			}
-		})
-        }
-        // -->
-        </script>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_newthread_fields',
-        'template'	=> $db->escape_string('<tr>
-        <td class="trow1" width="20%"><strong>{$title}</strong>
-		<div class="smalltext">{$description}</div>
-        </td>
-        <td class="trow1">
-		<span class="smalltext">
-			{$code}
-		</span>		
-        </td>	
-        </tr>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_overview',
-        'template'	=> $db->escape_string('<html>
-        <head>
-		<title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_overview}</title>
-		{$headerinclude}
-        </head>
-        <body>
-		{$header}
-		<div class="tborder">
-			<div class="thead"><strong>{$lang->inplayscenes_overview}</strong></div>
-			<div class="trow1">
-				<form id="inplayscenes_filter" method="get" action="misc.php?action=all_inplayscenes">
-					<input type="hidden" name="action" value="all_inplayscenes" />
-					<div>
-						<div class="inplayscenes_overview-filter-table">
-
-							<div class="inplayscenes_overview-filter-row">
-								<div class="tcat">{$lang->inplayscenes_overview_filter_status}</div>
-								<div class="inplayscenes_overview-filter-input">
-									<select name="scenestatus" data-selected="{$scenestatus}">
-										<option value="all">{$lang->inplayscenes_overview_filter_status_all}</option>
-										<option value="active">{$lang->inplayscenes_overview_filter_status_active}</option>
-										<option value="archive">{$lang->inplayscenes_overview_filter_status_archive}</option>
-									</select>
-									<select name="area" data-selected="{$area}">
-										<option value="all_area">{$lang->inplayscenes_overview_filter_area_all}</option>
-										<option value="inplayarea">{$lang->inplayscenes_overview_filter_area_inplayarea}</option>
-										<option value="auarea">{$lang->inplayscenes_overview_filter_area_sideplay}</option>
-									</select>
-								</div>
-							</div>
-
-							<div class="inplayscenes_overview-filter-row">
-								<div class="tcat">{$lang->inplayscenes_overview_filter_postorder}</div>
-								<div class="inplayscenes_overview-filter-input">
-									<select name="postorder" data-selected="{$postorder_input}">
-										<option value="-1">{$lang->inplayscenes_overview_filter_postorder_all}</option>
-										<option value="1">{$lang->inplayscenes_postorder_fixed}</option>
-										<option value="0">{$lang->inplayscenes_postorder_none}</option>
-									</select>
-									{$openscene_filter}
-								</div>
-							</div>
-
-							<div class="inplayscenes_overview-filter-row">
-								<div class="tcat">{$lang->inplayscenes_overview_filter_character}</div>
-								<div class="inplayscenes_overview-filter-input">
-								<input type="text" class="textbox" name="charactername" id="charactername" value="{$charactername}" />
-								</div>
-							</div>
-
-							<div class="inplayscenes_overview-filter-row">
-								<div class="tcat">{$lang->inplayscenes_overview_filter_player}</div>
-								<div class="inplayscenes_overview-filter-input">
-								<input type="text" class="textbox" name="playername" id="playername" value="{$playername}" />
-								</div>
-							</div>
-							
-						</div>
-
-						<div class="inplayscenes_overview-button">
-							<input type="submit" value="{$lang->inplayscenes_overview_filter_button}" class="button" />
-						</div>
-
-					</div>
-				</form>
-			</div>
-			<div class="thead">{$scene_counter}</div>
-			{$sort_bit}
-			<div class="inplayscenes_overview-scene-table trow1">
-				{$scenes_bit}
-			</div>
-			<div class="trow1">
-				{$multipage}
-			</div>
-		</div>
-		{$footer}
-        </body>
-        </html>
-
-        <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
-        <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
-        <script type="text/javascript">
-        <!--
-		document.addEventListener(\'DOMContentLoaded\', function() {
-		// Funktionen zur Auswahl der Werte
-		var selects = document.querySelectorAll(\'select[data-selected]\');
-		selects.forEach(function(select) {
-			var selectedValue = select.getAttribute(\'data-selected\');
-			if (selectedValue !== null) {
-				select.value = selectedValue;
-			}
-		});
-		// Initialisierung von select2
-		if(use_xmlhttprequest == "1")
-		{
-			MyBB.select2();
-
-			var select2Fields = {
-				\'#charactername\': "{$charactername_placeholder}",
-				\'#playername\': "{$playername_placeholder}"
-			};
-
-			$.each(select2Fields, function(fieldId, placeholder) {
-				$(fieldId).select2({
-					placeholder: placeholder,
-					minimumInputLength: 2,
-					multiple: false,
-					allowClear: true,
-					ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
-						url: "xmlhttp.php?action=get_users",
-						dataType: \'json\',
-						data: function (term, page) {
-							return {
-								query: term, // search term
-								from_page: "all_inplayscenes",
-								selectField: fieldId
-							};
-						},
-						results: function (data, page) { // parse the results into the format expected by Select2.
-							return {results: data};
-						}
-					},
-					initSelection: function(element, callback) {
-						var value = $(element).val();
-						if (value !== "") {
-							callback({
-								id: value,
-								text: value
-							});
-						}
-					},
-					// Allow the user entered text to be selected as well
-					createSearchChoice: function(term, data) {
-						if ($(data).filter(function() {
-							return this.text.localeCompare(term) === 0;
-						}).length === 0) {
-							return {id: term, text: term};
-						}
-					},
-				});
-
-				$(\'[for=\' + fieldId.replace(\'#\', \'\') + \']\').on(\'click\', function(){
-					$(fieldId).select2(\'open\');
-					return false;
-				});
-			});
-		}
-        });
-        </script>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_overview_openscene_filter',
-        'template'	=> $db->escape_string('<select name="scenesetting" data-selected2="{$scenesetting}">
-        <option value="0">{$lang->inplayscenes_openscene_private}</option>
-        <option value="1">{$lang->inplayscenes_openscene_agreed}</option>
-        <option value="2">{$lang->inplayscenes_openscene_open}</option>
-        </select>
-
-        <script type="text/javascript">
-        document.addEventListener(\'DOMContentLoaded\', function() {
-        // Überprüfen und Setzen der select-Werte
-        var selects = document.querySelectorAll(\'select[data-selected2]\');
-		selects.forEach(function(select) {
-			var selectedValue = select.getAttribute(\'data-selected2\');
-			if (selectedValue !== null && selectedValue !== "") {
-				select.value = selectedValue;
-			}
-		});
-        });
-        </script>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_overview_scene',
-        'template'	=> $db->escape_string('<div class="inplayscenes_overview-scene-row">
-        <div class="inplayscenes_overview-scene-column">
-		<strong>{$AUscene}{$openscene}{$postorder}</strong>
-        </div>
-        <div class="inplayscenes_overview-scene-column">
-		<strong><a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
-		<b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-		<b>{$lang->inplayscenes_scenesetting}</b> {$scenedate}<br>
-		{$triggerwarning}
-		{$inplayscenesfields}
-        </div>
-        <div class="inplayscenes_overview-scene-column">
-		<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>
-		{$lastpostdate}<br />{$lastposter}
-        </div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_overview_scene_fields',
-        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_overview_scene_none',
-        'template'	=> $db->escape_string('<div class="inplayscenes_overview-none">{$lang->inplayscenes_overview_none}</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_overview_scene_sort',
-        'template'	=> $db->escape_string('<div class="trow1">
-        <form id="inplayscenes_sort" method="get" action="misc.php?action=all_inplayscenes">
-        <input type="hidden" name="action" value="all_inplayscenes">
-		<input type="hidden" name="scenestatus" value="{$scenestatus}">
-		<input type="hidden" name="area" value="{$area}">
-		<input type="hidden" name="postorder" value="{$postorder_input}">
-		<input type="hidden" name="scenesetting" value="{$scenesetting}">
-		<input type="hidden" name="charactername" value="{$charactername}">
-		<input type="hidden" name="playername" value="{$playername}">
-		
-		<div class="inplayscenes_overview-sort">
-			{$lang->inplayscenes_overview_sort}
-			<select name="type" data-selected="{$type}">
-				<option value="date">{$lang->inplayscenes_overview_sort_date}</option>
-				<option value="lastpost">{$lang->inplayscenes_overview_sort_lastpost}</option>
-			</select>
-			<select name="sort" data-selected="{$sort}">
-				<option value="ASC">{$lang->inplayscenes_overview_sort_asc}</option>
-				<option value="DESC">{$lang->inplayscenes_overview_sort_desc}</option>
-			</select>
-			<input type="submit" value="{$lang->inplayscenes_overview_sort_button}" class="button" />
-		</div>
-        </form>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_pdf_fields',
-        'template'	=> $db->escape_string('{$inplayscene[\'partnerusers\']}<br>{$inplayscene[\'scenedate\']}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postbit',
-        'template'	=> $db->escape_string('<div class="inplayscenes-postbit">
-        <div class="thead">{$lang->inplayscenes_postbit}</div>
-        <div class="smalltext">
-        <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
-		<b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
-		{$triggerwarning}
-		{$inplayscenesfields}
-        </div> 
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postbit_fields',
-        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postbit_pdf',
-        'template'	=> $db->escape_string('<a href="misc.php?action=inplayscenes_pdf&amp;pid={$post[\'pid\']}" target="_blank" title="{$lang->inplayscenes_postbit_pdf}">{$lang->inplayscenes_postbit_pdf}</a>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postingreminder',
-        'template'	=> $db->escape_string('<html>
-        <head>
-        <title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_postingreminder}</title>
-        {$headerinclude}
-        </head>
-        <body>
-		{$header}
-		<div class="tborder">
-			<div class="thead"><strong>{$lang->inplayscenes_postingreminder}</strong></div>
-			<div class="inplayscenes_postingreminder-desc trow1">{$postingreminder_desc}</div>
-			<div class="trow1">
-				{$reminder_bit}
-			</div>
-		</div>
-		{$footer}
-        </body>
-        </html>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postingreminder_banner',
-        'template'	=> $db->escape_string('<div class="red_alert"><a href="misc.php?action=postingreminder">{$banner_text}</a></div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postingreminder_bit',
-        'template'	=> $db->escape_string('<div class="tcat">{$countday}</div>
-        <div class="inplayscenes_postingreminder-scene-table">
-        {$scene_rows}
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postingreminder_none',
-        'template'	=> $db->escape_string('<div class="inplayscenes_postingreminder-none">{$lang->inplayscenes_postingreminder_none}</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postingreminder_scene',
-        'template'	=> $db->escape_string('<div class="inplayscenes_postingreminder-scene-row">
-        <div class="inplayscenes_postingreminder-scene-column">
-        <strong>{$AUscene} <a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
-		<b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-		<b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
-		{$triggerwarning}
-		{$inplayscenesfields}
-        </div>
-        <div class="inplayscenes_postingreminder-scene-column">
-		<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>
-		{$lastpostdate}<br />{$lastposter}
-        </div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_postingreminder_scene_fields',
-        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_showthread',
-        'template'	=> $db->escape_string('<tr>
-        <td class="trow1">
-		<div class="inplayscenes_showthread">
-			<div class="tcat">{$lang->inplayscenes_showthread}</div>
-			<div class="inplayscenes_showthread-bit">
-				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_characters}</strong></div>
-				<div class="inplayscenes_showthread-value">{$partnerusers}</div>
-			</div>
-			<div class="inplayscenes_showthread-bit">
-				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_scenesetting}</strong></div>
-				<div class="inplayscenes_showthread-value">{$openscene}{$postorder}</div>
-			</div>
-			<div class="inplayscenes_showthread-bit">
-				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_date}</strong></div>
-				<div class="inplayscenes_showthread-value">{$scenedate}</div>
-			</div>
-			{$triggerwarning}
-			{$inplayscenesfields}
-		</div>
-        </td>
-        </tr>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_showthread_add',
-        'template'	=> $db->escape_string('<a href="misc.php?action=add_openscenes&amp;tid={$tid}" class="button new_reply_button">{$lang->inplayscenes_showthread_openscene}</a>&nbsp;'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_showthread_edit',
-        'template'	=> $db->escape_string('<a href="misc.php?action=inplayscenes_edit&amp;tid={$tid}" class="button new_reply_button">{$lang->inplayscenes_showthread_edit}</a>&nbsp;'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_showthread_fields',
-        'template'	=> $db->escape_string('<div class="inplayscenes_showthread-bit">
-        <div class="inplayscenes_showthread-label"><strong>{$title}</strong></div>
-        <div class="inplayscenes_showthread-value">{$value}</div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_showthread_pdf',
-        'template'	=> $db->escape_string('<a href="misc.php?action=inplayscenes_pdf&amp;tid={$tid}" target="_blank" class="button new_reply_button">{$lang->inplayscenes_showthreadt_pdf}</a>&nbsp;'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_showthread_relevant',
-        'template'	=> $db->escape_string('<a href="misc.php?action=update_relevantstatus&amp;tid={$tid}" class="button new_reply_button">{$lang->inplayscenes_showthreadt_relevant}</a>&nbsp;'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user',
-        'template'	=> $db->escape_string('<html>
-        <head>
-		<title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_user}</title>
-		{$headerinclude}
-        </head>
-        <body>
-		{$header}
-		<div class="tborder">
-			
-			{$user_settings}
-
-			<div class="inplayscenes_user-scene-summary trow1">
-				<div class="thead">{$scene_summary}</div>
-
-				<div class="inplayscenes_user-scene-sort tcat">
-					<form id="inplayscenes_sortChara" method="get" action="misc.php?action=inplayscenes">
-						<input type="hidden" name="action" value="inplayscenes">
-						{$lang->inplayscenes_user_sort}
-						<select name="typeChara" data-selectedChara="{$typeChara}">
-							<option value="date">{$lang->inplayscenes_user_sort_date}</option>
-							<option value="lastpost">{$lang->inplayscenes_user_sort_lastpost}</option>
-						</select>
-						<select name="sortChara" data-selectedChara="{$sortChara}">
-							<option value="ASC">{$lang->inplayscenes_user_sort_asc}</option>
-							<option value="DESC">{$lang->inplayscenes_user_sort_desc}</option>
-						</select>
-						<input type="submit" value="{$lang->inplayscenes_user_sort_button}" class="button">
-					</form>
-				</div>
-				
-				{$character_bit}
-			</div>
-
-			{$footer}
-		</div>
-        </body>
-        </html>
-
-        <script type="text/javascript">
-        document.addEventListener(\'DOMContentLoaded\', function() {
-		// Überprüfen und Setzen der select-Werte
-		var selects = document.querySelectorAll(\'select[data-selectedChara]\');
-		selects.forEach(function(select) {
-			var selectedValue = select.getAttribute(\'data-selectedChara\');
-			if (selectedValue !== null && selectedValue !== "") {
-				select.value = selectedValue;
-			}
-		});
-        });
-        </script>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_usersettings',
-        'template'	=> $db->escape_string('<div class="thead">{$lang->inplayscenes_usersettings}</div>
-        <form action="misc.php?action=inplayscenes" method="post">
-        <div class="inplayscenes_user-settings trow1">
-		<div class="inplayscenes_user-setting-row">
-			<div>
-				<strong>{$lang->inplayscenes_usersettings_reminder}</strong>
-				<div class="smalltext">{$lang->inplayscenes_usersettings_reminder_desc}</div>
-			</div>
-			<div>
-				<input type="number" id="reminder_days" class="textbox" name="reminder_days" value="{$reminder_days}" min="0">
-			</div>
-		</div>
-		{$notification_setting}
-		<div class="inplayscenes_user-button">
-			<div class="smalltext">{$lang->inplayscenes_usersettings_hint}</div>
-			<input type="submit" name="do_userscenesettings" value="{$lang->inplayscenes_usersettings_button}" class="button">
-		</div>
-        </div>
-        </form>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_usersettings_notification',
-        'template'	=> $db->escape_string('<div class="inplayscenes_user-setting-row">
-        <div>
-		<strong>{$lang->inplayscenes_usersettings_notification}</strong>
-		<div class="smalltext">{$lang->inplayscenes_usersettings_notification_desc}</div>
-        </div>
-        <div>
-		{$type_radiobuttons}
-        </div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user_character',
-        'template'	=> $db->escape_string('<div class="inplayscenes_user-character-scenes">
-        <div class="inplayscenes_user-scene-header">
-        <div class="thead">
-			{$scene_counter_character}<span>{$reminder_status}</span>
-		</div>
-        </div>
-
-        <!-- Inplay Szenen -->
-        <div class="inplayscenes_user-scene-category">
-		<div class="tcat">{$scene_counter_inplay}</div>
-		<div class="inplayscenes_user-scene-table">
-			<div class="inplayscenes_user-scene-row trow2">
-				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_next}</strong></div>
-				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_info}</strong></div>
-				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_last}</strong></div>
-			</div>
-			{$inplay_scene_bit}
-		</div>
-        </div>
-
-        <!-- AU Szenen -->
-        <div class="inplayscenes_user-scene-category">
-		<div class="tcat">{$scene_counter_sideplay}</div>
-		<div class="inplayscenes_user-scene-table">
-			<div class="inplayscenes_user-scene-row trow2">
-				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_next}</strong></div>
-				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_info}</strong></div>
-				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_last}</strong></div>
-			</div>
-			{$au_scene_bit}
-		</div>
-        </div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user_none',
-        'template'	=> $db->escape_string('<div class="inplayscenes_user-scene-none">{$lang->inplayscenes_user_scene_none}</div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user_scene',
-        'template'	=> $db->escape_string('<div class="inplayscenes_user-scene-row">
-        <div class="inplayscenes_user-scene-col">
-        <strong><center>{$isnext}</center></strong>
-        </div>
-        <div class="inplayscenes_user-scene-col">
-        {$scene_infos}
-        </div>
-        <div class="inplayscenes_user-scene-col">
-        {$lastpost_bit}
-        </div>
-        </div>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user_scene_fields',
-        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user_scene_infos',
-        'template'	=> $db->escape_string('<strong><a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
-        <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
-        <b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
-        {$triggerwarning}
-        {$inplayscenesfields}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
-
-    $insert_array = array(
-        'title'		=> 'inplayscenes_user_scene_last',
-        'template'	=> $db->escape_string('<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>{$lastpostdate}<br>{$lastposter}'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-    $db->insert_query("templates", $insert_array);
+    // Templates 
+    inplayscenes_templates();
     
     // STYLESHEET HINZUFÜGEN
 	require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+    // Funktion
     $css = inplayscenes_stylesheet();
     $sid = $db->insert_query("themestylesheets", $css);
 	$db->update_query("themestylesheets", array("cachefile" => "inplayscenes.css"), "sid = '".$sid."'", 1);
@@ -2480,11 +1334,9 @@ function inplayscenes_admin_manage() {
 // Stylesheet zum Master Style hinzufügen
 function inplayscenes_admin_update_stylesheet(&$table) {
 
-    global $db, $mybb;
-
-    $update_data = inplayscenes_update_stylesheet();
-    $update_stylesheet = $update_data['stylesheet'];
-    $update_string = $update_data['update_string'];
+    global $db, $mybb, $lang;
+	
+    $lang->load('rpgstuff_stylesheet_updates');
 
     require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
 
@@ -2501,44 +1353,7 @@ function inplayscenes_admin_update_stylesheet(&$table) {
             update_theme_stylesheet_list($theme['tid']);
         } 
 
-        flash_message("Der Stylesheet wurde erfolgreich zum MyBB Master Style hinzugefügt.", "success");
-        admin_redirect("index.php?module=rpgstuff-stylesheet_updates");
-    }
-
-    // UPDATE
-    if ($mybb->input['action'] == 'add_update' AND $mybb->get_input('plugin') == "inplayscenes") {
-
-        $theme_query = $db->simple_select('themes', 'tid, name');
-        while ($theme = $db->fetch_array($theme_query)) {
-
-            $stylesheet_query = $db->simple_select("themestylesheets", "*", "name='".$db->escape_string('inplayscenes.css')."' AND tid = ".$theme['tid']);
-            $stylesheet = $db->fetch_array($stylesheet_query);
-
-            // Nur wenn das Stylesheet existiert, fortfahren
-            if ($stylesheet) {
-
-                $sid = $stylesheet['sid'];
-    
-                // Now we have the new stylesheet, save it
-                $updated_stylesheet = array(
-                    "cachefile" => $db->escape_string($stylesheet['name']),
-                    "stylesheet" => $db->escape_string($stylesheet['stylesheet']."\n\n".$update_stylesheet),
-                    "lastmodified" => TIME_NOW
-                );
-    
-                $db->update_query("themestylesheets", $updated_stylesheet, "sid='{$sid}'");
-    
-                // Cache the stylesheet to the file
-                if(!cache_stylesheet($theme['tid'], $stylesheet['name'], $updated_stylesheet['stylesheet'])) {
-                    $db->update_query("themestylesheets", array('cachefile' => "css.php?stylesheet={$sid}"), "sid='{$sid}'", 1);
-                }
-    
-                // Update the CSS file list for this theme
-                update_theme_stylesheet_list($theme['tid']);
-            }
-        }
-
-        flash_message("Die Stylesheets wurden erfolgreich geupdatet.", "success");
+        flash_message($lang->stylesheets_flash, "success");
         admin_redirect("index.php?module=rpgstuff-stylesheet_updates");
     }
 
@@ -2552,32 +1367,95 @@ function inplayscenes_admin_update_stylesheet(&$table) {
     "), "tid");
     
     if (!empty($master_check)) {
-        $masterstyle = false;
-    } else {
         $masterstyle = true;
+    } else {
+        $masterstyle = false;
     }
 
-    if (!empty($update_string)) {
-        // Ob im Master Style die Überprüfung vorhanden ist
-        $masterstylesheet = $db->fetch_field($db->query("SELECT stylesheet FROM ".TABLE_PREFIX."themestylesheets WHERE tid = 1"), "stylesheet");
-        $pos = strpos($masterstylesheet, $update_string);
-        if ($pos === false) {
-            $update_check = false;
-        } else {
-            $update_check = true;
-        }
+    if (!empty($masterstyle)) {
+        $table->construct_cell($lang->stylesheets_masterstyle, array('class' => 'align_center'));
     } else {
-        $update_check = false;
+        $table->construct_cell("<a href=\"index.php?module=rpgstuff-stylesheet_updates&action=add_master&plugin=inplayscenes\">".$lang->stylesheets_add."</a>", array('class' => 'align_center'));
+    }
+    
+    $table->construct_row();
+}
+
+// Plugin Update
+function inplayscenes_admin_update_plugin(&$table) {
+
+    global $db, $mybb, $lang;
+	
+    $lang->load('rpgstuff_plugin_updates');
+
+    // UPDATE
+    if ($mybb->input['action'] == 'add_update' AND $mybb->get_input('plugin') == "inplayscenes") {
+
+        // Einstellungen überprüfen => Type = update
+        inplayscenes_settings('update');
+        rebuild_settings();
+
+        // Templates 
+        inplayscenes_templates();
+
+        // Stylesheet
+        $update_data = inplayscenes_stylesheet_update();
+        $update_stylesheet = $update_data['stylesheet'];
+        $update_string = $update_data['update_string'];
+        if (!empty($update_string)) {
+
+            // Ob im Master Style die Überprüfung vorhanden ist
+            $masterstylesheet = $db->fetch_field($db->query("SELECT stylesheet FROM ".TABLE_PREFIX."themestylesheets WHERE tid = 1 AND name = 'inplayscenes.css'"), "stylesheet");
+            $pos = strpos($masterstylesheet, $update_string);
+            if ($pos === false) { // nicht vorhanden 
+            
+                $theme_query = $db->simple_select('themes', 'tid, name');
+                while ($theme = $db->fetch_array($theme_query)) {
+        
+                    $stylesheet_query = $db->simple_select("themestylesheets", "*", "name='".$db->escape_string('inplayscenes.css')."' AND tid = ".$theme['tid']);
+                    $stylesheet = $db->fetch_array($stylesheet_query);
+        
+                    if ($stylesheet) {
+
+                        require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+        
+                        $sid = $stylesheet['sid'];
+            
+                        $updated_stylesheet = array(
+                            "cachefile" => $db->escape_string($stylesheet['name']),
+                            "stylesheet" => $db->escape_string($stylesheet['stylesheet']."\n\n".$update_stylesheet),
+                            "lastmodified" => TIME_NOW
+                        );
+            
+                        $db->update_query("themestylesheets", $updated_stylesheet, "sid='".$sid."'");
+            
+                        if(!cache_stylesheet($theme['tid'], $stylesheet['name'], $updated_stylesheet['stylesheet'])) {
+                            $db->update_query("themestylesheets", array('cachefile' => "css.php?stylesheet=".$sid), "sid='".$sid."'", 1);
+                        }
+            
+                        update_theme_stylesheet_list($theme['tid']);
+                    }
+                }
+            } 
+        }
+
+        // Datenbanktabellen & Felder
+        inplayscenes_database();
+
+        flash_message($lang->plugins_flash, "success");
+        admin_redirect("index.php?module=rpgstuff-plugin_updates");
     }
 
-    if (empty($masterstyle) AND empty($update_check)) {
-        $table->construct_cell("auf dem aktuellsten Stand", array('class' => 'align_center'));
+    // Zelle mit dem Namen des Themes
+    $table->construct_cell("<b>".htmlspecialchars_uni("Inplayszenen-Manager")."</b>", array('width' => '70%'));
+
+    // Überprüfen, ob Update erledigt
+    $update_check = inplayscenes_is_updated();
+
+    if (!empty($update_check)) {
+        $table->construct_cell($lang->plugins_actual, array('class' => 'align_center'));
     } else {
-        if (!empty($masterstyle) AND empty($update_check)) {
-            $table->construct_cell("<a href=\"index.php?module=rpgstuff-stylesheet_updates&action=add_master&plugin=inplayscenes\">Zum MyBB Master Style neu hinzufügen</a>", array('class' => 'align_center'));
-        } else if ((empty($masterstyle) AND !empty($update_check)) || (!empty($masterstyle) AND !empty($update_check)) ) {
-            $table->construct_cell("<a href=\"index.php?module=rpgstuff-stylesheet_updates&action=add_update&plugin=inplayscenes\">Update hinzufügen</a>", array('class' => 'align_center'));
-        }
+        $table->construct_cell("<a href=\"index.php?module=rpgstuff-plugin_updates&action=add_update&plugin=inplayscenes\">".$lang->plugins_update."</a>", array('class' => 'align_center'));
     }
     
     $table->construct_row();
@@ -6766,7 +5644,1185 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
     return $result;
 }
 
-// STYLESHEET INSTALL
+// DATENBANKTABELLEN + DATENBANKFELDER
+function inplayscenes_database() {
+
+    global $db;
+    
+    // DATENBANKEN ERSTELLEN
+    // Inplayszenen
+    if (!$db->table_exists("inplayscenes")) {
+        $db->query("CREATE TABLE ".TABLE_PREFIX."inplayscenes (
+            `isid` int(10) NOT NULL AUTO_INCREMENT, 
+            `tid` int(11) unsigned,
+            `partners` VARCHAR(1500),
+            `partners_username` VARCHAR(2500),
+            `date` date,
+            `trigger_warning` VARCHAR(500),
+            `openscene` int(1) unsigned NOT NULL DEFAULT '0',
+            `postorder` int(1) unsigned NOT NULL DEFAULT '1',
+            `relevant` int(1) unsigned NOT NULL DEFAULT '1',
+            PRIMARY KEY(`isid`),
+            KEY `isid` (`isid`)
+            )
+            ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+        ");
+    }
+    // Inplayszenen Felder
+    if (!$db->table_exists("inplayscenes_fields")) {
+
+        $db->query("CREATE TABLE ".TABLE_PREFIX."inplayscenes_fields (
+            `ifid` int(10) NOT NULL AUTO_INCREMENT, 
+            `identification` VARCHAR(250) NOT NULL,
+            `title` VARCHAR(250) NOT NULL,
+            `description` VARCHAR(500),
+            `type` VARCHAR(250) NOT NULL,
+            `options` VARCHAR(500),
+            `required` int(1) NOT NULL DEFAULT '0',
+            `edit` int(1) NOT NULL DEFAULT '0',
+            `disporder` int(5) NOT NULL DEFAULT '0',
+            `allow_html` int(1) NOT NULL DEFAULT '0',
+            `allow_mybb` int(1) NOT NULL DEFAULT '0',
+            `allow_img` int(1) NOT NULL DEFAULT '0',
+            `allow_video` int(1) NOT NULL DEFAULT '0',
+            PRIMARY KEY(`ifid`),
+            KEY `ifid` (`ifid`)
+            )
+            ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+        ");
+
+    }
+
+    // DATENBANKSPALTEN => USERS
+    // Benachrichtigungssystem
+    if (!$db->field_exists("inplayscenes_notification", "users")) {
+        if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+            $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '1';");
+        } else {
+            $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '0';");
+        }
+    }
+    // Posterinnerung Tage
+    if (!$db->field_exists("inplayscenes_reminder_days", "users")) {
+        $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_days` int(5) unsigned NOT NULL DEFAULT '0';");
+    }
+    // Posterinnerung Einstellung
+    if (!$db->field_exists("inplayscenes_reminder_status", "users")) {
+        $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_status` int(1) unsigned NOT NULL DEFAULT '1';");
+    }
+
+}
+
+// EINSTELLUNGEN
+function inplayscenes_settings($type = 'install') {
+
+    global $db; 
+
+    $setting_array = array(
+		'inplayscenes_inplayarea' => array(
+			'title' => 'Inplay-Bereich',
+            'description' => 'Bei welchen Foren handelt es sich um den Inplay-Bereich? Es reicht aus, die übergeordneten Kategorien zu markieren.',
+            'optionscode' => 'forumselect',
+            'value' => '', // Default
+            'disporder' => 1
+		),
+        'inplayscenes_archive' => array(
+            'title' => 'Inplay-Archiv',
+            'description' => 'Bei welchen Foren handelt es sich um das Inplay-Archiv? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
+            'optionscode' => 'forumselect',
+            'value' => '', // Default
+            'disporder' => 2
+        ),
+		'inplayscenes_excludedarea' => array(
+			'title' => 'ausgeschlossene Foren',
+            'description' => 'Gibt es Foren, die innerhalb der ausgewählten Kategorien liegen, aber nicht beachtet werden sollen (z.B. Communication)?',
+            'optionscode' => 'forumselect',
+            'value' => '', // Default
+            'disporder' => 3
+		),
+		'inplayscenes_sideplays' => array(
+			'title' => 'AU-Szenen-Bereich',
+            'description' => 'Bei welchen Foren handelt es sich um den alternative Universum Bereich? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
+            'optionscode' => 'forumselect',
+            'value' => '', // Default
+            'disporder' => 4
+		),
+		'inplayscenes_sideplays_archive' => array(
+			'title' => 'AU-Szenen-Archiv',
+            'description' => 'Bei welchen Foren handelt es sich um das Archiv für das alternative Universum? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
+            'optionscode' => 'forumselect',
+            'value' => '', // Default
+            'disporder' => 5
+		),
+        'inplayscenes_open' => array(
+            'title' => 'Szenenarten',
+            'description' => 'Soll es die Möglichkeit geben für verschiedene Szenenarten? Zur Auswahl stehen: privat, nach Absprache oder offen.',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 6
+        ),
+        'inplayscenes_trigger' => array(
+            'title' => 'Triggerwarnungen',
+            'description' => 'Sollen User ein Feld ausfüllen können, in welchem sie zusätzlich Triggerthemen angeben können, die in der Szene vorkommen können?',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 7
+        ),
+        'inplayscenes_information_thread' => array(
+            'title' => 'Szeneninformationen: Showthread',
+            'description' => 'Sollen im Template Showthread Szeneinformation angezeigt werden?',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 8
+        ),
+        'inplayscenes_information_posts' => array(
+            'title' => 'Szeneninformationen: Postbit',
+            'description' => 'Sollen in den Templates Postbit und Postbit_Classic Szeneinformation angezeigt werden?',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 9
+        ),
+        'inplayscenes_allscene' => array(
+            'title' => 'Übersicht aller Inplayszenen',
+            'description' => 'Soll es eine zentrale Übersicht aller Inplayszenen des Forums geben, die mit verschiedenen Filtern durchsucht und gefiltert werden können?',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 10
+        ),
+        'inplayscenes_nextuser' => array(
+            'title' => 'Anzeige vom nächster Poster',
+            'description' => 'Wie soll auf der Übersichtsseite gezeigt werden, dass man selbst nicht in der Szene dran ist?',
+            'optionscode' => 'select\n0=Username vom nächsten Charakter\n1=Einfaches - du bist nicht dran\n2=Spitzname vom nächsten Mitglied',
+            'value' => '0', // Default
+            'disporder' => 11
+        ),
+        'inplayscenes_playername' => array(
+            'title' => 'Spitzname',
+            'description' => 'Wie lautet die FID / der Identifikator von dem Profilfeld/Steckbrieffeld für den Spitznamen?<br>
+			<b>Hinweis:</b> Bei klassischen Profilfeldern muss eine Zahl eintragen werden. Bei dem Steckbrief-Plugin von Risuena muss der Name/Identifikator des Felds eingetragen werden.',
+            'optionscode' => 'text',
+            'value' => '4', // Default
+            'disporder' => 12
+        ),
+        'inplayscenes_inactive_scenes' => array(
+            'title' => 'inaktive Szenen',
+            'description' => 'Ab wie vielen Monaten, ohne Post gelten Szenen als inaktiv? Inaktive Szenen werden automatisch ins Archiv verschoben. AU-Szenen sind nicht davon betroffen. (0 = schließt die Funktion aus)',
+            'optionscode' => 'numeric',
+            'value' => '0', // Default
+            'disporder' => 13
+        ),
+   
+    );
+
+    $gid = $db->fetch_field($db->write_query("SELECT gid FROM ".TABLE_PREFIX."settinggroups` WHERE name = 'inplayscenes' LIMIT 1;"), "gid");
+
+    if ($type == 'install') {
+        foreach ($setting_array as $name => $setting) {
+          $setting['name'] = $name;
+          $setting['gid'] = $gid;
+          $db->insert_query('settings', $setting);
+        }  
+    }
+
+    if ($type == 'update') {
+
+        // Einzeln durchgehen 
+        foreach ($setting_array as $name => $setting) {
+            $setting['name'] = $name;
+            $check = $db->write_query("SELECT name FROM ".TABLE_PREFIX."settings` WHERE name = '".$name."'"); // Überprüfen, ob sie vorhanden ist
+            $check = $db->num_rows($check);
+            $setting['gid'] = $gid;
+            if ($check == 0) { // nicht vorhanden, hinzufügen
+              $db->insert_query('settings', $setting);
+            }
+        }
+
+        // Weiter Einstellungs Updates
+
+    }
+
+    rebuild_settings();
+}
+
+// TEMPLATES
+function inplayscenes_templates() {
+
+    global $db;
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_counter',
+        'template'	=> $db->escape_string('<li><a href="misc.php?action=inplayscenes">{$lang->inplayscenes}</a> ({$allinplayscenes_open}/{$allinplayscenes})</li>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_editscene',
+        'template'	=> $db->escape_string('<html>
+        <head>
+        <title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_editscene}</title>
+		{$headerinclude}
+        </head>
+        <body>
+		{$header}
+		{$inplayscenes_edit_error}
+		<div class="tborder">
+			<div class="thead">{$lang->inplayscenes_editscene}</div>
+			<div class="trow1">
+				<form action="misc.php?action=do_editinplayscenes&tid={$tid}" method="post">
+					<div class="inplayscenes-formular_input-row">
+						<div class="inplayscenes-formular_input-desc">
+							<b>{$lang->inplayscenes_fields_partners}</b>
+							<div class="smalltext">
+								{$lang->inplayscenes_fields_partners_desc}
+							</div>
+						</div>
+						<div class="inplayscenes-formular_input-input">
+							<input type="text" class="textbox" name="characters" id="characters" maxlength="1155" value="{$characters}" />
+						</div>
+					</div>
+
+					<div class="inplayscenes-formular_input-row">
+						<div class="inplayscenes-formular_input-desc">
+							<b>{$lang->inplayscenes_fields_scenesetting}</b>
+							<div class="smalltext">
+								{$lang->inplayscenes_fields_scenesetting_desc}
+							</div>
+						</div>
+						<div class="inplayscenes-formular_input-input">
+							{$postorder_select} {$openscene_select}
+						</div>
+					</div>
+
+					<div class="inplayscenes-formular_input-row">
+						<div class="inplayscenes-formular_input-desc">
+							<b>{$lang->inplayscenes_fields_date}</b>
+							<div class="smalltext">
+								{$lang->inplayscenes_fields_date_desc}
+							</div>
+						</div>
+						<div class="inplayscenes-formular_input-input">
+							<input type="date" name="date" class="textbox" value="{$date}" />
+							<div class="smalltext">{$lang->inplayscenes_fields_date_hint}</div>
+						</div>
+					</div>
+					
+					{$own_inplayscenesfields}
+					{$trigger_warning}
+
+					<div class="inplayscenes-formular_button">
+						<input type="submit" name="do_editinplayscenes" value="{$lang->inplayscenes_editscene_button}" class="button" />
+					</div>
+				</form>
+			</div>
+		</div>
+		{$footer}
+        </body>
+        </html>
+        <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
+        <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
+        <script type="text/javascript">
+        <!--
+        if(use_xmlhttprequest == "1")
+        {
+        MyBB.select2();
+        $("#characters").select2({
+        placeholder: "{$lang->inplayscenes_search_character}",
+        minimumInputLength: 2,
+        maximumSelectionSize: \'\',
+        multiple: true,
+        ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
+        url: "xmlhttp.php?action=get_users",
+        dataType: \'json\',
+        data: function (term, page) {
+        return {
+        query: term, // search term
+        };
+        },
+        results: function (data, page) { // parse the results into the format expected by Select2.
+        // since we are using custom formatting functions we do not need to alter remote JSON data
+        return {results: data};
+        }
+        },
+        initSelection: function(element, callback) {
+        var query = $(element).val();
+        if (query !== "") {
+        var newqueries = [];
+        exp_queries = query.split(",");
+        $.each(exp_queries, function(index, value ){
+        if(value.replace(/\s/g, \'\') != "")
+        {
+        var newquery = {
+        id: value.replace(/,\s?/g, ","),
+        text: value.replace(/,\s?/g, ",")
+        };
+        newqueries.push(newquery);
+        }
+        });
+        callback(newqueries);
+        }
+        }
+        })
+        }
+        // -->
+        </script>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_editscene_fields',
+        'template'	=> $db->escape_string('<div class="inplayscenes-formular_input-row">
+        <div class="inplayscenes-formular_input-desc">
+		<b>{$title}</b>
+		<div class="smalltext">
+			{$description}
+		</div>
+        </div>
+        <div class="inplayscenes-formular_input-input">
+		{$code}
+        </div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_forumdisplay',
+        'template'	=> $db->escape_string('<div class="smalltext">
+        <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
+        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
+        <b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
+        {$triggerwarning}
+        {$inplayscenesfields}
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_forumdisplay_fields',
+        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_memberprofile',
+        'template'	=> $db->escape_string('<fieldset>
+        <div class="thead">{$lang->inplayscenes_memberprofile}</div>	
+        <div class="inplayscenes_memberprofile">
+		<div class="inplayscenes_memberprofile-mainplays">
+			{$allinplayscenes_year}
+		</div>
+		<div class="inplayscenes_memberprofile-sideplays">
+			<div class="inplayscenes_memberprofile-auplays">
+				<h3>{$lang->inplayscenes_memberprofile_au}</h3>
+				{$allsideplayscenes}
+			</div>
+			<div class="inplayscenes_memberprofile-out">
+				<h3>{$lang->inplayscenes_memberprofile_notrelevant}</h3>
+				{$allnotrelevantscenes}
+			</div>
+		</div>		
+        </div>
+        </fieldset><br>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_memberprofile_month',
+        'template'	=> $db->escape_string('<div class="tcat">{$monthname}</div>{$scenes}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_memberprofile_none',
+        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$lang->inplayscenes_memberprofile_none}</div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_memberprofile_scenes',
+        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$scenedate} {$status}  - <a href="{$scenelink}">{$subject}</a><br><span class="smalltext">{$partnerusers}</span></div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_memberprofile_year',
+        'template'	=> $db->escape_string('<div class="thead">{$year}</div>{$scenes_by_month}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_newthread',
+        'template'	=> $db->escape_string('<tr>
+        <td class="trow1" width="20%">
+		<strong>{$lang->inplayscenes_fields_partners}</strong>
+		<div class="smalltext">{$lang->inplayscenes_fields_partners_desc}</div>
+        </td>
+        <td class="trow1">
+		<span class="smalltext">
+			<input type="text" class="textbox" name="characters" id="characters" size="40" maxlength="1155" value="{$characters}" style="min-width: 347px; max-width: 100%;" /> 
+			<br>
+			{$lang->inplayscenes_fields_partners_hint}
+		</span> 
+        </td>
+        </tr>
+        <tr>
+        <td class="trow1" width="20%">
+		<strong>{$lang->inplayscenes_fields_scenesetting}</strong>
+		<div class="smalltext">{$lang->inplayscenes_fields_scenesetting_desc}</div>
+        </td>
+        <td class="trow1">
+		{$postorder_select} {$openscene_select}
+        </td>
+        </tr>
+        <tr>
+        <td class="trow1" width="20%"><strong>{$lang->inplayscenes_fields_date}</strong>
+		<div class="smalltext">{$lang->inplayscenes_fields_date_desc}</div>
+        </td>
+        <td class="trow1">
+        <span class="smalltext">
+			<input type="date" name="date" class="textbox" value="{$date}" \>		
+			<br>
+			{$lang->inplayscenes_fields_date_hint}
+		</span>		
+        </td>	
+        </tr>
+
+        {$own_inplayscenesfields}
+        {$trigger_warning}
+
+        <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
+        <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
+        <script type="text/javascript">
+        <!--
+        if(use_xmlhttprequest == "1")
+        {
+		MyBB.select2();
+		$("#characters").select2({
+			placeholder: "{$lang->inplayscenes_search_character}",
+			minimumInputLength: 2,
+			maximumSelectionSize: \'\',
+			multiple: true,
+			ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
+				url: "xmlhttp.php?action=get_users",
+				dataType: \'json\',
+				data: function (term, page) {
+					return {
+						query: term, // search term
+					};
+				},
+				results: function (data, page) { // parse the results into the format expected by Select2.
+					// since we are using custom formatting functions we do not need to alter remote JSON data
+					return {results: data};
+				}
+			},
+			initSelection: function(element, callback) {
+				var query = $(element).val();
+				if (query !== "") {
+					var newqueries = [];
+					exp_queries = query.split(",");
+					$.each(exp_queries, function(index, value ){
+						if(value.replace(/\s/g, \'\') != "")
+						{
+							var newquery = {
+								id: value.replace(/,\s?/g, ","),
+								text: value.replace(/,\s?/g, ",")
+							};
+							newqueries.push(newquery);
+						}
+					});
+					callback(newqueries);
+				}
+			}
+		})
+        }
+        // -->
+        </script>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_newthread_fields',
+        'template'	=> $db->escape_string('<tr>
+        <td class="trow1" width="20%"><strong>{$title}</strong>
+		<div class="smalltext">{$description}</div>
+        </td>
+        <td class="trow1">
+		<span class="smalltext">
+			{$code}
+		</span>		
+        </td>	
+        </tr>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview',
+        'template'	=> $db->escape_string('<html>
+        <head>
+		<title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_overview}</title>
+		{$headerinclude}
+        </head>
+        <body>
+		{$header}
+		<div class="tborder">
+			<div class="thead"><strong>{$lang->inplayscenes_overview}</strong></div>
+			<div class="trow1">
+				<form id="inplayscenes_filter" method="get" action="misc.php?action=all_inplayscenes">
+					<input type="hidden" name="action" value="all_inplayscenes" />
+					<div>
+						<div class="inplayscenes_overview-filter-table">
+
+							<div class="inplayscenes_overview-filter-row">
+								<div class="tcat">{$lang->inplayscenes_overview_filter_status}</div>
+								<div class="inplayscenes_overview-filter-input">
+									<select name="scenestatus" data-selected="{$scenestatus}">
+										<option value="all">{$lang->inplayscenes_overview_filter_status_all}</option>
+										<option value="active">{$lang->inplayscenes_overview_filter_status_active}</option>
+										<option value="archive">{$lang->inplayscenes_overview_filter_status_archive}</option>
+									</select>
+									<select name="area" data-selected="{$area}">
+										<option value="all_area">{$lang->inplayscenes_overview_filter_area_all}</option>
+										<option value="inplayarea">{$lang->inplayscenes_overview_filter_area_inplayarea}</option>
+										<option value="auarea">{$lang->inplayscenes_overview_filter_area_sideplay}</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="inplayscenes_overview-filter-row">
+								<div class="tcat">{$lang->inplayscenes_overview_filter_postorder}</div>
+								<div class="inplayscenes_overview-filter-input">
+									<select name="postorder" data-selected="{$postorder_input}">
+										<option value="-1">{$lang->inplayscenes_overview_filter_postorder_all}</option>
+										<option value="1">{$lang->inplayscenes_postorder_fixed}</option>
+										<option value="0">{$lang->inplayscenes_postorder_none}</option>
+									</select>
+									{$openscene_filter}
+								</div>
+							</div>
+
+							<div class="inplayscenes_overview-filter-row">
+								<div class="tcat">{$lang->inplayscenes_overview_filter_character}</div>
+								<div class="inplayscenes_overview-filter-input">
+								<input type="text" class="textbox" name="charactername" id="charactername" value="{$charactername}" />
+								</div>
+							</div>
+
+							<div class="inplayscenes_overview-filter-row">
+								<div class="tcat">{$lang->inplayscenes_overview_filter_player}</div>
+								<div class="inplayscenes_overview-filter-input">
+								<input type="text" class="textbox" name="playername" id="playername" value="{$playername}" />
+								</div>
+							</div>
+							
+						</div>
+
+						<div class="inplayscenes_overview-button">
+							<input type="submit" value="{$lang->inplayscenes_overview_filter_button}" class="button" />
+						</div>
+
+					</div>
+				</form>
+			</div>
+			<div class="thead">{$scene_counter}</div>
+			{$sort_bit}
+			<div class="inplayscenes_overview-scene-table trow1">
+				{$scenes_bit}
+			</div>
+			<div class="trow1">
+				{$multipage}
+			</div>
+		</div>
+		{$footer}
+        </body>
+        </html>
+
+        <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
+        <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
+        <script type="text/javascript">
+        <!--
+		document.addEventListener(\'DOMContentLoaded\', function() {
+		// Funktionen zur Auswahl der Werte
+		var selects = document.querySelectorAll(\'select[data-selected]\');
+		selects.forEach(function(select) {
+			var selectedValue = select.getAttribute(\'data-selected\');
+			if (selectedValue !== null) {
+				select.value = selectedValue;
+			}
+		});
+		// Initialisierung von select2
+		if(use_xmlhttprequest == "1")
+		{
+			MyBB.select2();
+
+			var select2Fields = {
+				\'#charactername\': "{$charactername_placeholder}",
+				\'#playername\': "{$playername_placeholder}"
+			};
+
+			$.each(select2Fields, function(fieldId, placeholder) {
+				$(fieldId).select2({
+					placeholder: placeholder,
+					minimumInputLength: 2,
+					multiple: false,
+					allowClear: true,
+					ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
+						url: "xmlhttp.php?action=get_users",
+						dataType: \'json\',
+						data: function (term, page) {
+							return {
+								query: term, // search term
+								from_page: "all_inplayscenes",
+								selectField: fieldId
+							};
+						},
+						results: function (data, page) { // parse the results into the format expected by Select2.
+							return {results: data};
+						}
+					},
+					initSelection: function(element, callback) {
+						var value = $(element).val();
+						if (value !== "") {
+							callback({
+								id: value,
+								text: value
+							});
+						}
+					},
+					// Allow the user entered text to be selected as well
+					createSearchChoice: function(term, data) {
+						if ($(data).filter(function() {
+							return this.text.localeCompare(term) === 0;
+						}).length === 0) {
+							return {id: term, text: term};
+						}
+					},
+				});
+
+				$(\'[for=\' + fieldId.replace(\'#\', \'\') + \']\').on(\'click\', function(){
+					$(fieldId).select2(\'open\');
+					return false;
+				});
+			});
+		}
+        });
+        </script>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview_openscene_filter',
+        'template'	=> $db->escape_string('<select name="scenesetting" data-selected2="{$scenesetting}">
+        <option value="0">{$lang->inplayscenes_openscene_private}</option>
+        <option value="1">{$lang->inplayscenes_openscene_agreed}</option>
+        <option value="2">{$lang->inplayscenes_openscene_open}</option>
+        </select>
+
+        <script type="text/javascript">
+        document.addEventListener(\'DOMContentLoaded\', function() {
+        // Überprüfen und Setzen der select-Werte
+        var selects = document.querySelectorAll(\'select[data-selected2]\');
+		selects.forEach(function(select) {
+			var selectedValue = select.getAttribute(\'data-selected2\');
+			if (selectedValue !== null && selectedValue !== "") {
+				select.value = selectedValue;
+			}
+		});
+        });
+        </script>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview_scene',
+        'template'	=> $db->escape_string('<div class="inplayscenes_overview-scene-row">
+        <div class="inplayscenes_overview-scene-column">
+		<strong>{$AUscene}{$openscene}{$postorder}</strong>
+        </div>
+        <div class="inplayscenes_overview-scene-column">
+		<strong><a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
+		<b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
+		<b>{$lang->inplayscenes_scenesetting}</b> {$scenedate}<br>
+		{$triggerwarning}
+		{$inplayscenesfields}
+        </div>
+        <div class="inplayscenes_overview-scene-column">
+		<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>
+		{$lastpostdate}<br />{$lastposter}
+        </div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview_scene_fields',
+        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview_scene_none',
+        'template'	=> $db->escape_string('<div class="inplayscenes_overview-none">{$lang->inplayscenes_overview_none}</div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview_scene_sort',
+        'template'	=> $db->escape_string('<div class="trow1">
+        <form id="inplayscenes_sort" method="get" action="misc.php?action=all_inplayscenes">
+        <input type="hidden" name="action" value="all_inplayscenes">
+		<input type="hidden" name="scenestatus" value="{$scenestatus}">
+		<input type="hidden" name="area" value="{$area}">
+		<input type="hidden" name="postorder" value="{$postorder_input}">
+		<input type="hidden" name="scenesetting" value="{$scenesetting}">
+		<input type="hidden" name="charactername" value="{$charactername}">
+		<input type="hidden" name="playername" value="{$playername}">
+		
+		<div class="inplayscenes_overview-sort">
+			{$lang->inplayscenes_overview_sort}
+			<select name="type" data-selected="{$type}">
+				<option value="date">{$lang->inplayscenes_overview_sort_date}</option>
+				<option value="lastpost">{$lang->inplayscenes_overview_sort_lastpost}</option>
+			</select>
+			<select name="sort" data-selected="{$sort}">
+				<option value="ASC">{$lang->inplayscenes_overview_sort_asc}</option>
+				<option value="DESC">{$lang->inplayscenes_overview_sort_desc}</option>
+			</select>
+			<input type="submit" value="{$lang->inplayscenes_overview_sort_button}" class="button" />
+		</div>
+        </form>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_pdf_fields',
+        'template'	=> $db->escape_string('{$inplayscene[\'partnerusers\']}<br>{$inplayscene[\'scenedate\']}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postbit',
+        'template'	=> $db->escape_string('<div class="inplayscenes-postbit">
+        <div class="thead">{$lang->inplayscenes_postbit}</div>
+        <div class="smalltext">
+        <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
+        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
+		<b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
+		{$triggerwarning}
+		{$inplayscenesfields}
+        </div> 
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postbit_fields',
+        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postbit_pdf',
+        'template'	=> $db->escape_string('<a href="misc.php?action=inplayscenes_pdf&amp;pid={$post[\'pid\']}" target="_blank" title="{$lang->inplayscenes_postbit_pdf}">{$lang->inplayscenes_postbit_pdf}</a>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postingreminder',
+        'template'	=> $db->escape_string('<html>
+        <head>
+        <title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_postingreminder}</title>
+        {$headerinclude}
+        </head>
+        <body>
+		{$header}
+		<div class="tborder">
+			<div class="thead"><strong>{$lang->inplayscenes_postingreminder}</strong></div>
+			<div class="inplayscenes_postingreminder-desc trow1">{$postingreminder_desc}</div>
+			<div class="trow1">
+				{$reminder_bit}
+			</div>
+		</div>
+		{$footer}
+        </body>
+        </html>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postingreminder_banner',
+        'template'	=> $db->escape_string('<div class="red_alert"><a href="misc.php?action=postingreminder">{$banner_text}</a></div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postingreminder_bit',
+        'template'	=> $db->escape_string('<div class="tcat">{$countday}</div>
+        <div class="inplayscenes_postingreminder-scene-table">
+        {$scene_rows}
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postingreminder_none',
+        'template'	=> $db->escape_string('<div class="inplayscenes_postingreminder-none">{$lang->inplayscenes_postingreminder_none}</div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postingreminder_scene',
+        'template'	=> $db->escape_string('<div class="inplayscenes_postingreminder-scene-row">
+        <div class="inplayscenes_postingreminder-scene-column">
+        <strong>{$AUscene} <a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
+		<b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
+		<b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
+		{$triggerwarning}
+		{$inplayscenesfields}
+        </div>
+        <div class="inplayscenes_postingreminder-scene-column">
+		<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>
+		{$lastpostdate}<br />{$lastposter}
+        </div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_postingreminder_scene_fields',
+        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_showthread',
+        'template'	=> $db->escape_string('<tr>
+        <td class="trow1">
+		<div class="inplayscenes_showthread">
+			<div class="tcat">{$lang->inplayscenes_showthread}</div>
+			<div class="inplayscenes_showthread-bit">
+				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_characters}</strong></div>
+				<div class="inplayscenes_showthread-value">{$partnerusers}</div>
+			</div>
+			<div class="inplayscenes_showthread-bit">
+				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_scenesetting}</strong></div>
+				<div class="inplayscenes_showthread-value">{$openscene}{$postorder}</div>
+			</div>
+			<div class="inplayscenes_showthread-bit">
+				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_date}</strong></div>
+				<div class="inplayscenes_showthread-value">{$scenedate}</div>
+			</div>
+			{$triggerwarning}
+			{$inplayscenesfields}
+		</div>
+        </td>
+        </tr>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_showthread_add',
+        'template'	=> $db->escape_string('<a href="misc.php?action=add_openscenes&amp;tid={$tid}" class="button new_reply_button">{$lang->inplayscenes_showthread_openscene}</a>&nbsp;'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_showthread_edit',
+        'template'	=> $db->escape_string('<a href="misc.php?action=inplayscenes_edit&amp;tid={$tid}" class="button new_reply_button">{$lang->inplayscenes_showthread_edit}</a>&nbsp;'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_showthread_fields',
+        'template'	=> $db->escape_string('<div class="inplayscenes_showthread-bit">
+        <div class="inplayscenes_showthread-label"><strong>{$title}</strong></div>
+        <div class="inplayscenes_showthread-value">{$value}</div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_showthread_pdf',
+        'template'	=> $db->escape_string('<a href="misc.php?action=inplayscenes_pdf&amp;tid={$tid}" target="_blank" class="button new_reply_button">{$lang->inplayscenes_showthreadt_pdf}</a>&nbsp;'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_showthread_relevant',
+        'template'	=> $db->escape_string('<a href="misc.php?action=update_relevantstatus&amp;tid={$tid}" class="button new_reply_button">{$lang->inplayscenes_showthreadt_relevant}</a>&nbsp;'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user',
+        'template'	=> $db->escape_string('<html>
+        <head>
+		<title>{$mybb->settings[\'bbname\']} - {$lang->inplayscenes_user}</title>
+		{$headerinclude}
+        </head>
+        <body>
+		{$header}
+		<div class="tborder">
+			
+			{$user_settings}
+
+			<div class="inplayscenes_user-scene-summary trow1">
+				<div class="thead">{$scene_summary}</div>
+
+				<div class="inplayscenes_user-scene-sort tcat">
+					<form id="inplayscenes_sortChara" method="get" action="misc.php?action=inplayscenes">
+						<input type="hidden" name="action" value="inplayscenes">
+						{$lang->inplayscenes_user_sort}
+						<select name="typeChara" data-selectedChara="{$typeChara}">
+							<option value="date">{$lang->inplayscenes_user_sort_date}</option>
+							<option value="lastpost">{$lang->inplayscenes_user_sort_lastpost}</option>
+						</select>
+						<select name="sortChara" data-selectedChara="{$sortChara}">
+							<option value="ASC">{$lang->inplayscenes_user_sort_asc}</option>
+							<option value="DESC">{$lang->inplayscenes_user_sort_desc}</option>
+						</select>
+						<input type="submit" value="{$lang->inplayscenes_user_sort_button}" class="button">
+					</form>
+				</div>
+				
+				{$character_bit}
+			</div>
+
+			{$footer}
+		</div>
+        </body>
+        </html>
+
+        <script type="text/javascript">
+        document.addEventListener(\'DOMContentLoaded\', function() {
+		// Überprüfen und Setzen der select-Werte
+		var selects = document.querySelectorAll(\'select[data-selectedChara]\');
+		selects.forEach(function(select) {
+			var selectedValue = select.getAttribute(\'data-selectedChara\');
+			if (selectedValue !== null && selectedValue !== "") {
+				select.value = selectedValue;
+			}
+		});
+        });
+        </script>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_usersettings',
+        'template'	=> $db->escape_string('<div class="thead">{$lang->inplayscenes_usersettings}</div>
+        <form action="misc.php?action=inplayscenes" method="post">
+        <div class="inplayscenes_user-settings trow1">
+		<div class="inplayscenes_user-setting-row">
+			<div>
+				<strong>{$lang->inplayscenes_usersettings_reminder}</strong>
+				<div class="smalltext">{$lang->inplayscenes_usersettings_reminder_desc}</div>
+			</div>
+			<div>
+				<input type="number" id="reminder_days" class="textbox" name="reminder_days" value="{$reminder_days}" min="0">
+			</div>
+		</div>
+		{$notification_setting}
+		<div class="inplayscenes_user-button">
+			<div class="smalltext">{$lang->inplayscenes_usersettings_hint}</div>
+			<input type="submit" name="do_userscenesettings" value="{$lang->inplayscenes_usersettings_button}" class="button">
+		</div>
+        </div>
+        </form>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_usersettings_notification',
+        'template'	=> $db->escape_string('<div class="inplayscenes_user-setting-row">
+        <div>
+		<strong>{$lang->inplayscenes_usersettings_notification}</strong>
+		<div class="smalltext">{$lang->inplayscenes_usersettings_notification_desc}</div>
+        </div>
+        <div>
+		{$type_radiobuttons}
+        </div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user_character',
+        'template'	=> $db->escape_string('<div class="inplayscenes_user-character-scenes">
+        <div class="inplayscenes_user-scene-header">
+        <div class="thead">
+			{$scene_counter_character}<span>{$reminder_status}</span>
+		</div>
+        </div>
+
+        <!-- Inplay Szenen -->
+        <div class="inplayscenes_user-scene-category">
+		<div class="tcat">{$scene_counter_inplay}</div>
+		<div class="inplayscenes_user-scene-table">
+			<div class="inplayscenes_user-scene-row trow2">
+				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_next}</strong></div>
+				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_info}</strong></div>
+				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_last}</strong></div>
+			</div>
+			{$inplay_scene_bit}
+		</div>
+        </div>
+
+        <!-- AU Szenen -->
+        <div class="inplayscenes_user-scene-category">
+		<div class="tcat">{$scene_counter_sideplay}</div>
+		<div class="inplayscenes_user-scene-table">
+			<div class="inplayscenes_user-scene-row trow2">
+				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_next}</strong></div>
+				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_info}</strong></div>
+				<div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_last}</strong></div>
+			</div>
+			{$au_scene_bit}
+		</div>
+        </div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user_none',
+        'template'	=> $db->escape_string('<div class="inplayscenes_user-scene-none">{$lang->inplayscenes_user_scene_none}</div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user_scene',
+        'template'	=> $db->escape_string('<div class="inplayscenes_user-scene-row">
+        <div class="inplayscenes_user-scene-col">
+        <strong><center>{$isnext}</center></strong>
+        </div>
+        <div class="inplayscenes_user-scene-col">
+        {$scene_infos}
+        </div>
+        <div class="inplayscenes_user-scene-col">
+        {$lastpost_bit}
+        </div>
+        </div>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user_scene_fields',
+        'template'	=> $db->escape_string('<b>{$title}:</b> {$value}<br>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user_scene_infos',
+        'template'	=> $db->escape_string('<strong><a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
+        <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
+        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
+        <b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
+        {$triggerwarning}
+        {$inplayscenesfields}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_user_scene_last',
+        'template'	=> $db->escape_string('<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>{$lastpostdate}<br>{$lastposter}'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    foreach ($templates as $template) {
+        $check = $db->num_rows($db->simple_select("templates", "title", "title = '".$template['title']."'"));
+        if ($check == 0) {
+          $db->insert_query("templates", $template);
+        } 
+    }
+}
+
+// STYLESHEET MASTER
 function inplayscenes_stylesheet() {
 
     global $db;
@@ -7002,17 +7058,29 @@ function inplayscenes_stylesheet() {
 }
 
 // STYLESHEET UPDATE
-function inplayscenes_update_stylesheet() {
+function inplayscenes_stylesheet_update() {
 
     // Update-Stylesheet
     // wird an bestehende Stylesheets immer ganz am ende hinzugefügt
     $update = '';
 
-    // Definiere den  Überprüfung-String (kann spezifisch für die Überprüfung sein)
+    // Definiere den  Überprüfung-String (muss spezifisch für die Überprüfung sein)
     $update_string = '';
 
     return array(
         'stylesheet' => $update,
         'update_string' => $update_string
     );
+}
+
+// UPDATE CHECK
+function inplayscenes_is_updated(){
+
+    global $db, $mybb;
+
+    if ($db->table_exists("inplayscenes_fields")) {
+        return true;
+    }
+    return false;
+
 }
