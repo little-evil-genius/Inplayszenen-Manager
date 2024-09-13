@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Inplayszenen Manager  - by little.evil.genius
  * https://github.com/little-evil-genius/Inplayszenen-Manager
@@ -75,13 +74,13 @@ function inplayscenes_info(){
 // Diese Funktion wird aufgerufen, wenn das Plugin installiert wird (optional).
 function inplayscenes_install(){
     
-    global $db, $cache, $config, $lang;
+    global $db, $cache, $lang;
 
     // SPRACHDATEI
     $lang->load("inplayscenes");
 
     // RPG Stuff Modul muss vorhanden sein
-    if (!file_exists(MYBB_ROOT.$config['admin_dir']."/admin/modules/rpgstuff/module_meta.php")) {
+    if (!file_exists(MYBB_ADMIN_DIR."/modules/rpgstuff/module_meta.php")) {
 		flash_message($lang->inplayscenes_error_rpgstuff, 'error');
 		admin_redirect('index.php?module=config-plugins');
 	}
@@ -5245,6 +5244,10 @@ function inplayscenes_get_relevant_forums($relevantforums) {
 
     $relevant_forums = array_filter(array_unique($relevant_forums));
 
+    if (empty($relevant_forums)) {
+        return [0];
+    }
+
     return $relevant_forums;
 }
 
@@ -5814,7 +5817,7 @@ function inplayscenes_settings($type = 'install') {
    
     );
 
-    $gid = $db->fetch_field($db->write_query("SELECT gid FROM ".TABLE_PREFIX."settinggroups` WHERE name = 'inplayscenes' LIMIT 1;"), "gid");
+    $gid = $db->fetch_field($db->write_query("SELECT gid FROM ".TABLE_PREFIX."settinggroups WHERE name = 'inplayscenes' LIMIT 1;"), "gid");
 
     if ($type == 'install') {
         foreach ($setting_array as $name => $setting) {
@@ -5829,7 +5832,7 @@ function inplayscenes_settings($type = 'install') {
         // Einzeln durchgehen 
         foreach ($setting_array as $name => $setting) {
             $setting['name'] = $name;
-            $check = $db->write_query("SELECT name FROM ".TABLE_PREFIX."settings` WHERE name = '".$name."'"); // Überprüfen, ob sie vorhanden ist
+            $check = $db->write_query("SELECT name FROM ".TABLE_PREFIX."settings WHERE name = '".$name."'"); // Überprüfen, ob sie vorhanden ist
             $check = $db->num_rows($check);
             $setting['gid'] = $gid;
             if ($check == 0) { // nicht vorhanden, hinzufügen
