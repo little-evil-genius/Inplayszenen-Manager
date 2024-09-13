@@ -9,30 +9,24 @@ if(!defined("IN_MYBB"))
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
-$page->add_breadcrumb_item("Plugins aktualisieren", "index.php?module=rpgstuff-plugin_updates");
+$page->add_breadcrumb_item($lang->plugins, "index.php?module=rpgstuff-plugin_updates");
 
-$page->output_header("Plugins aktualisieren");
+$page->output_header($lang->plugins);
 
 $sub_tabs['update_plugins'] = array(
-    'title' => "Plugins aktualisieren",
+    'title' => $lang->plugins,
     'link' => "index.php?module=rpgstuff-plugin_updates",
-    'description' => "In diesem Bereich kannst du nach neueren Versionen der installierten RPG-Plugins suchen."
+    'description' => $lang->plugins_desc
 );
 $page->output_nav_tabs($sub_tabs, 'update_plugins');
 
+// Tabelle erstellen
+$table = new Table;
 
-$form = new Form('index.php?module=rpgstuff-plugin_updates', 'post');
-$form_container = new FormContainer('Plugin aktualisieren');
-$form_container->output_row_header('Plugin');
-$form_container->output_row_header('Update');
+// Hook für die Tabelleninhalte hinzufügen
+$plugins->run_hooks("admin_rpgstuff_update_plugin", $table);
 
-$plugins->run_hooks("admin_rpgstuff_update_plugins");
+// Tabelle anzeigen
+$table->output($lang->plugins_table);
 
-if($form_container->num_rows() == 0){
-    $form_container->output_cell('Aktuell hast du keine Plugins, die hier aufgelistet werden können.', array("colspan" => 2));
-    $form_container->construct_row();
-}
-
-$form_container->end();
-$form->end();
 $page->output_footer();
