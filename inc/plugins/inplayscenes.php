@@ -26,6 +26,7 @@ $plugins->add_hook("admin_rpgstuff_permissions", "inplayscenes_admin_rpgstuff_pe
 $plugins->add_hook("admin_rpgstuff_menu", "inplayscenes_admin_rpgstuff_menu");
 $plugins->add_hook("admin_rpgstuff_menu_updates", "inplayscenes_admin_rpgstuff_menu_updates");
 $plugins->add_hook("admin_load", "inplayscenes_admin_manage");
+$plugins->add_hook('admin_rpgstuff_update_stylesheet', 'inplayscenes_admin_update_stylesheet');
 $plugins->add_hook('newthread_start', 'inplayscenes_newthread_start');
 $plugins->add_hook("datahandler_post_validate_thread", "inplayscenes_validate_newthread");
 $plugins->add_hook('newthread_do_newthread_end', 'inplayscenes_do_newthread');
@@ -133,7 +134,6 @@ function inplayscenes_install(){
     // Posterinnerung Einstellung
     $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_status` int(1) unsigned NOT NULL DEFAULT '1';");
 
-
     // EINSTELLUNGEN HINZUFÜGEN
     $maxdisporder = $db->fetch_field($db->query("SELECT MAX(disporder) FROM ".TABLE_PREFIX."settinggroups"), "MAX(disporder)");
     $setting_group = array(
@@ -212,7 +212,7 @@ function inplayscenes_install(){
         ),
         'inplayscenes_allscene' => array(
             'title' => 'Übersicht aller Inplayszenen',
-            'description' => 'Soll es eine zentrale Übersicht aller Inplayszenen des Forums, die mit verschiedenen Filtern durchsucht und gefiltert werden können?',
+            'description' => 'Soll es eine zentrale Übersicht aller Inplayszenen des Forums geben, die mit verschiedenen Filtern durchsucht und gefiltert werden können?',
             'optionscode' => 'yesno',
             'value' => '1', // Default
             'disporder' => 10
@@ -220,13 +220,13 @@ function inplayscenes_install(){
         'inplayscenes_nextuser' => array(
             'title' => 'Anzeige vom nächster Poster',
             'description' => 'Wie soll auf der Übersichtsseite gezeigt werden, dass man selbst nicht in der Szene dran ist?',
-            'optionscode' => 'select\n0=Username vom nächsten Charakter\n1=Einfaches - du bist nicht dran\n2=Spielername vom nächsten Charakter',
+            'optionscode' => 'select\n0=Username vom nächsten Charakter\n1=Einfaches - du bist nicht dran\n2=Spitzname vom nächsten Mitglied',
             'value' => '0', // Default
             'disporder' => 11
         ),
         'inplayscenes_playername' => array(
-            'title' => 'Spielername',
-            'description' => 'Wie lautet die FID / der Identifikator von dem Profilfeld/Steckbrieffeld für den Spielernamen?<br>
+            'title' => 'Spitzname',
+            'description' => 'Wie lautet die FID / der Identifikator von dem Profilfeld/Steckbrieffeld für den Spitznamen?<br>
 			<b>Hinweis:</b> Bei klassischen Profilfeldern muss eine Zahl eintragen werden. Bei dem Steckbrief-Plugin von Risuena muss der Name/Identifikator des Felds eingetragen werden.',
             'optionscode' => 'text',
             'value' => '4', // Default
@@ -1287,235 +1287,9 @@ function inplayscenes_install(){
     
     // STYLESHEET HINZUFÜGEN
 	require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
-    $css = array(
-		'name' => 'inplayscenes.css',
-		'tid' => 1,
-		'attachedto' => '',
-		"stylesheet" =>	'.inplayscenes-formular_input-row {
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        align-items: center;
-        margin: 5px 10px;
-        gap: 5px;
-        }
-
-        .inplayscenes-formular_input-desc {
-        width: 30%;
-        }
-
-        .inplayscenes-formular_input-input {
-        width: 70%;
-        }
-
-        .inplayscenes-formular_button {
-        text-align: center;
-        margin: 5px 0;
-        }
-
-        .inplayscenes_memberprofile {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 10px;
-        background-color: #f5f5f5;
-        }
-
-        .inplayscenes_memberprofile-mainplays {
-        width: 60%;
-        padding: 10px;
-        max-height: 450px;
-        overflow: auto;
-        }
-
-        .inplayscenes_memberprofile-sideplays {
-        width: 37%;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        padding: 10px;
-        gap: 10px;
-        }
-
-        .inplayscenes_memberprofile-scenes {
-        margin-bottom: 5px;
-        }
-
-        .inplayscenes_overview-filter-table {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0 5px;
-        justify-content: space-around;
-        margin: 10px;
-        }
-
-        .inplayscenes_overview-filter-row {
-        width: 49%;
-        }
-
-        .inplayscenes_overview-filter-input {
-        text-align: center;
-        margin: 5px 0;
-        }
-
-        .inplayscenes_overview-button {
-        text-align: center;
-        margin: 10px 0;
-        }
-
-        .inplayscenes_overview-sort {
-        text-align: center;
-        margin: 10px 0;
-        }
-
-        .inplayscenes_overview-scene-table {
-        display: flex;
-        flex-direction: column;
-        }
-
-        .inplayscenes_overview-scene-row {
-        display: flex;
-        justify-content: space-between;
-        border-bottom: 1px solid #ddd;
-        padding: 10px;
-        align-items: center;
-        }
-
-        .inplayscenes_overview-scene-column {
-        flex: 1;
-        }
-
-        .inplayscenes_overview-scene-column:last-child {
-        text-align: right;
-        }
-
-        .inplayscenes_overview-none {
-        text-align: center;
-        margin: 10px 0;
-        }
-
-        .inplayscenes-postbit {
-        text-align:center; 
-        margin-bottom: 10px;
-        }
-
-        .inplayscenes_postingreminder-desc {
-        padding: 20px 40px;
-        text-align: justify;
-        line-height: 180%;
-        }
-
-        .inplayscenes_postingreminder-scene-table {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        }
-
-        .inplayscenes_postingreminder-scene-row {
-        display: flex;
-        justify-content: space-between;
-        border-bottom: 1px solid #ddd;
-        padding: 10px;
-        align-items: center;
-        }
-
-        .inplayscenes_postingreminder-scene-column {
-        flex: 1;
-        padding: 0 10px;
-        }
-
-        .inplayscenes_postingreminder-none {
-        text-align: center;
-        margin: 10px 0;
-        }
-
-        .inplayscenes_showthread-bit {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid #ddd;
-        }
-
-        .inplayscenes_showthread-bit:last-child {
-        border-bottom: none;
-        }
-
-        .inplayscenes_showthread-label {
-        width: 20%;
-        font-weight: bold;
-        }
-
-        .inplayscenes_showthread-value {
-        flex-grow: 1;
-        }
-
-        .inplayscenes_user-settings {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px 0px;
-        align-items: flex-start;
-        justify-content: space-evenly;
-        padding: 20px 0;
-        text-align: center;
-        }
-
-        .inplayscenes_user-scene-sort {
-        text-align: center;
-        }
-
-        .inplayscenes_user-character-scenes {
-        width: 80%;
-        margin: 20px auto;
-        }
-
-        .inplayscenes_user-button {
-        width: 100%;
-        text-align: center;
-        }
-
-        .inplayscenes_user-scene-header span {
-        float: right;
-        font-style: italic;
-        }
-
-        .inplayscenes_user-scene-table {
-        border: 1px solid #ddd;
-        }
-
-        .inplayscenes_user-scene-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-        align-items: center;
-        }
-
-        .inplayscenes_user-scene-row:last-child {
-        border-bottom: none;
-        }
-
-        .inplayscenes_user-scene-col {
-        width: 33%;
-        padding: 5px;
-        }
-
-        .inplayscenes_user-scene-none {
-        text-align: center;
-        margin: 10px 0;
-        }
-        
-        .inplayscene_next_none {
-        color: #a91717;
-        }
-
-        .inplayscene_next_you {
-        color: #127b12;
-        }',
-		'cachefile' => $db->escape_string(str_replace('/', '', 'inplayscenes.css')),
-		'lastmodified' => time()
-	);
-    
+    $css = inplayscenes_stylesheet();
     $sid = $db->insert_query("themestylesheets", $css);
-	$db->update_query("themestylesheets", array("cachefile" => "css.php?stylesheet=".$sid), "sid = '".$sid."'", 1);
+	$db->update_query("themestylesheets", array("cachefile" => "inplayscenes.css"), "sid = '".$sid."'", 1);
 
 	$tids = $db->simple_select("themes", "tid");
 	while($theme = $db->fetch_array($tids)) {
@@ -2701,6 +2475,112 @@ function inplayscenes_admin_manage() {
             exit;
         }
     }
+}
+
+// Stylesheet zum Master Style hinzufügen
+function inplayscenes_admin_update_stylesheet(&$table) {
+
+    global $db, $mybb;
+
+    $update_data = inplayscenes_update_stylesheet();
+    $update_stylesheet = $update_data['stylesheet'];
+    $update_string = $update_data['update_string'];
+
+    require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+
+    // HINZUFÜGEN
+    if ($mybb->input['action'] == 'add_master' AND $mybb->get_input('plugin') == "inplayscenes") {
+
+        $css = inplayscenes_stylesheet();
+        
+        $sid = $db->insert_query("themestylesheets", $css);
+        $db->update_query("themestylesheets", array("cachefile" => "inplayscenes.css"), "sid = '".$sid."'", 1);
+    
+        $tids = $db->simple_select("themes", "tid");
+        while($theme = $db->fetch_array($tids)) {
+            update_theme_stylesheet_list($theme['tid']);
+        } 
+
+        flash_message("Der Stylesheet wurde erfolgreich zum MyBB Master Style hinzugefügt.", "success");
+        admin_redirect("index.php?module=rpgstuff-stylesheet_updates");
+    }
+
+    // UPDATE
+    if ($mybb->input['action'] == 'add_update' AND $mybb->get_input('plugin') == "inplayscenes") {
+
+        $theme_query = $db->simple_select('themes', 'tid, name');
+        while ($theme = $db->fetch_array($theme_query)) {
+
+            $stylesheet_query = $db->simple_select("themestylesheets", "*", "name='".$db->escape_string('inplayscenes.css')."' AND tid = ".$theme['tid']);
+            $stylesheet = $db->fetch_array($stylesheet_query);
+
+            // Nur wenn das Stylesheet existiert, fortfahren
+            if ($stylesheet) {
+
+                $sid = $stylesheet['sid'];
+    
+                // Now we have the new stylesheet, save it
+                $updated_stylesheet = array(
+                    "cachefile" => $db->escape_string($stylesheet['name']),
+                    "stylesheet" => $db->escape_string($stylesheet['stylesheet']."\n\n".$update_stylesheet),
+                    "lastmodified" => TIME_NOW
+                );
+    
+                $db->update_query("themestylesheets", $updated_stylesheet, "sid='{$sid}'");
+    
+                // Cache the stylesheet to the file
+                if(!cache_stylesheet($theme['tid'], $stylesheet['name'], $updated_stylesheet['stylesheet'])) {
+                    $db->update_query("themestylesheets", array('cachefile' => "css.php?stylesheet={$sid}"), "sid='{$sid}'", 1);
+                }
+    
+                // Update the CSS file list for this theme
+                update_theme_stylesheet_list($theme['tid']);
+            }
+        }
+
+        flash_message("Die Stylesheets wurden erfolgreich geupdatet.", "success");
+        admin_redirect("index.php?module=rpgstuff-stylesheet_updates");
+    }
+
+    // Zelle mit dem Namen des Themes
+    $table->construct_cell("<b>".htmlspecialchars_uni("Inplayszenen-Manager")."</b>", array('width' => '70%'));
+
+    // Ob im Master Style vorhanden
+    $master_check = $db->fetch_field($db->query("SELECT tid FROM ".TABLE_PREFIX."themestylesheets 
+    WHERE name = 'inplayscenes.css' 
+    AND tid = 1
+    "), "tid");
+    
+    if (!empty($master_check)) {
+        $masterstyle = false;
+    } else {
+        $masterstyle = true;
+    }
+
+    if (!empty($update_string)) {
+        // Ob im Master Style die Überprüfung vorhanden ist
+        $masterstylesheet = $db->fetch_field($db->query("SELECT stylesheet FROM ".TABLE_PREFIX."themestylesheets WHERE tid = 1"), "stylesheet");
+        $pos = strpos($masterstylesheet, $update_string);
+        if ($pos === false) {
+            $update_check = false;
+        } else {
+            $update_check = true;
+        }
+    } else {
+        $update_check = false;
+    }
+
+    if (empty($masterstyle) AND empty($update_check)) {
+        $table->construct_cell("auf dem aktuellsten Stand", array('class' => 'align_center'));
+    } else {
+        if (!empty($masterstyle) AND empty($update_check)) {
+            $table->construct_cell("<a href=\"index.php?module=rpgstuff-stylesheet_updates&action=add_master&plugin=inplayscenes\">Zum MyBB Master Style neu hinzufügen</a>", array('class' => 'align_center'));
+        } else if ((empty($masterstyle) AND !empty($update_check)) || (!empty($masterstyle) AND !empty($update_check)) ) {
+            $table->construct_cell("<a href=\"index.php?module=rpgstuff-stylesheet_updates&action=add_update&plugin=inplayscenes\">Update hinzufügen</a>", array('class' => 'align_center'));
+        }
+    }
+    
+    $table->construct_row();
 }
 
 // NEUES THEMA ERÖFFNEN - ANZEIGE
@@ -4042,6 +3922,10 @@ function inplayscenes_memberprofile() {
     // Entfernen der Sideplay-Foren aus den Inplay-Foren
     $relevant_forums_inplay = array_diff($relevant_forums_inplay, $relevant_forums_sideplay);
 
+    if (empty($relevant_forums_inplay)) {
+        $relevant_forums_inplay = [0];
+    }
+
     $archiveplayforums = $inplay_archive.",".$sideplays_archive;
     $relevant_forums_archive = inplayscenes_get_relevant_forums($archiveplayforums);
 
@@ -4049,8 +3933,16 @@ function inplayscenes_memberprofile() {
     $active_inplay = inplayscenes_get_relevant_forums($inplay_forum);
     $relevant_forums_active_inplay = array_diff($active_inplay, $relevant_forums_sideplay);
 
+    if (empty($relevant_forums_active_inplay)) {
+        $relevant_forums_active_inplay = [0];
+    }
+
     $archive_inplay = inplayscenes_get_relevant_forums($inplay_archive);
     $relevant_forums_archive_inplay = array_diff($archive_inplay, $relevant_forums_sideplay);
+
+    if (empty($relevant_forums_archive_inplay)) {
+        $relevant_forums_archive_inplay = [0];
+    }
 
 
 	// Profil UID
@@ -6445,10 +6337,23 @@ function inplayscenes_get_relevant_forums($relevantforums) {
         $sql_exludedareas = "";
     }
 
-    $inplayarea = explode(',', $relevantforums);
+    $relevantforums = trim($relevantforums, ',');
+    
+    $inplayarea = array_filter(explode(',', $relevantforums), function($fid) {
+        return trim($fid) !== '-1'; 
+    });
+
+    if (empty($inplayarea)) {
+        return [0];
+    }
 
     $relevant_forums = [];
     foreach ($inplayarea as $fid) {
+
+        $fid = trim($fid); 
+        if (empty($fid) || $fid == '-1') {
+            continue;
+        }
 
         $query = $db->query("SELECT fid FROM ".TABLE_PREFIX."forums 
         WHERE (concat(',',parentlist,',') LIKE '%,".$fid.",%')
@@ -6859,4 +6764,255 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
     eval("\$result .= \"" . $templates->get("inplayscenes_memberprofile_scenes") . "\";");
 
     return $result;
+}
+
+// STYLESHEET INSTALL
+function inplayscenes_stylesheet() {
+
+    global $db;
+    
+    $css = array(
+		'name' => 'inplayscenes.css',
+		'tid' => 1,
+		'attachedto' => '',
+		'stylesheet' =>	'.inplayscenes-formular_input-row {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: center;
+        margin: 5px 10px;
+        gap: 5px;
+        }
+
+        .inplayscenes-formular_input-desc {
+        width: 30%;
+        }
+
+        .inplayscenes-formular_input-input {
+        width: 70%;
+        }
+
+        .inplayscenes-formular_button {
+        text-align: center;
+        margin: 5px 0;
+        }
+
+        .inplayscenes_memberprofile {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 10px;
+        background-color: #f5f5f5;
+        }
+
+        .inplayscenes_memberprofile-mainplays {
+        width: 60%;
+        padding: 10px;
+        max-height: 450px;
+        overflow: auto;
+        }
+
+        .inplayscenes_memberprofile-sideplays {
+        width: 37%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 10px;
+        gap: 10px;
+        }
+
+        .inplayscenes_memberprofile-scenes {
+        margin-bottom: 5px;
+        }
+
+        .inplayscenes_overview-filter-table {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 5px;
+        justify-content: space-around;
+        margin: 10px;
+        }
+
+        .inplayscenes_overview-filter-row {
+        width: 49%;
+        }
+
+        .inplayscenes_overview-filter-input {
+        text-align: center;
+        margin: 5px 0;
+        }
+
+        .inplayscenes_overview-button {
+        text-align: center;
+        margin: 10px 0;
+        }
+
+        .inplayscenes_overview-sort {
+        text-align: center;
+        margin: 10px 0;
+        }
+
+        .inplayscenes_overview-scene-table {
+        display: flex;
+        flex-direction: column;
+        }
+
+        .inplayscenes_overview-scene-row {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #ddd;
+        padding: 10px;
+        align-items: center;
+        }
+
+        .inplayscenes_overview-scene-column {
+        flex: 1;
+        }
+
+        .inplayscenes_overview-scene-column:last-child {
+        text-align: right;
+        }
+
+        .inplayscenes_overview-none {
+        text-align: center;
+        margin: 10px 0;
+        }
+
+        .inplayscenes-postbit {
+        text-align:center; 
+        margin-bottom: 10px;
+        }
+
+        .inplayscenes_postingreminder-desc {
+        padding: 20px 40px;
+        text-align: justify;
+        line-height: 180%;
+        }
+
+        .inplayscenes_postingreminder-scene-table {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        }
+
+        .inplayscenes_postingreminder-scene-row {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #ddd;
+        padding: 10px;
+        align-items: center;
+        }
+
+        .inplayscenes_postingreminder-scene-column {
+        flex: 1;
+        padding: 0 10px;
+        }
+
+        .inplayscenes_postingreminder-none {
+        text-align: center;
+        margin: 10px 0;
+        }
+
+        .inplayscenes_showthread-bit {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+        }
+
+        .inplayscenes_showthread-bit:last-child {
+        border-bottom: none;
+        }
+
+        .inplayscenes_showthread-label {
+        width: 20%;
+        font-weight: bold;
+        }
+
+        .inplayscenes_showthread-value {
+        flex-grow: 1;
+        }
+
+        .inplayscenes_user-settings {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px 0px;
+        align-items: flex-start;
+        justify-content: space-evenly;
+        padding: 20px 0;
+        text-align: center;
+        }
+
+        .inplayscenes_user-scene-sort {
+        text-align: center;
+        }
+
+        .inplayscenes_user-character-scenes {
+        width: 80%;
+        margin: 20px auto;
+        }
+
+        .inplayscenes_user-button {
+        width: 100%;
+        text-align: center;
+        }
+
+        .inplayscenes_user-scene-header span {
+        float: right;
+        font-style: italic;
+        }
+
+        .inplayscenes_user-scene-table {
+        border: 1px solid #ddd;
+        }
+
+        .inplayscenes_user-scene-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        align-items: center;
+        }
+
+        .inplayscenes_user-scene-row:last-child {
+        border-bottom: none;
+        }
+
+        .inplayscenes_user-scene-col {
+        width: 33%;
+        padding: 5px;
+        }
+
+        .inplayscenes_user-scene-none {
+        text-align: center;
+        margin: 10px 0;
+        }
+        
+        .inplayscene_next_none {
+        color: #a91717;
+        }
+
+        .inplayscene_next_you {
+        color: #127b12;
+        }',
+		'cachefile' => $db->escape_string(str_replace('/', '', 'inplayscenes.css')),
+		'lastmodified' => TIME_NOW
+	);
+
+    return $css;
+}
+
+// STYLESHEET UPDATE
+function inplayscenes_update_stylesheet() {
+
+    // Update-Stylesheet
+    // wird an bestehende Stylesheets immer ganz am ende hinzugefügt
+    $update = '';
+
+    // Definiere den  Überprüfung-String (kann spezifisch für die Überprüfung sein)
+    $update_string = '';
+
+    return array(
+        'stylesheet' => $update,
+        'update_string' => $update_string
+    );
 }
