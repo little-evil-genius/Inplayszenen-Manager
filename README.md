@@ -187,6 +187,7 @@ Alle Templates wurden größtenteils ohne Tabellen-Struktur gecodet. Das Layout 
 - forumdisplay_thread: {$inplayscenes_forumdisplay}
 - header: {$inplayscenes_postingreminder}
 - header_welcomeblock_member: {$inplayscenes_headercount}
+- member_profile: {$inplayscenes_memberprofile}
 - newthread: {$newthread_inplayscenes}
 - postbit & postbit_classic: {$post['inplayscenes_postbit']} & {$post['inplayscenes_pdf']}
 - showthread: {$inplayscenes_pdf} & {$inplayscenes_relevant} & {$inplayscenes_add} & {$inplayscenes_edit} & {$inplayscenes_showthread}
