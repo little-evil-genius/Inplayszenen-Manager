@@ -2829,7 +2829,7 @@ function inplayscenes_memberprofile() {
     $allinplayscenesyear_query = $db->query("SELECT i.*, t.*, YEAR(i.date) AS year, MONTH(i.date) AS month FROM ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
-    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_inplay).")
     AND relevant != 0
     ORDER BY i.date DESC
@@ -2966,7 +2966,7 @@ function inplayscenes_memberprofile() {
     $allinplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
-    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_inplay).")
     AND relevant != 0
     ORDER BY i.date DESC
@@ -2985,7 +2985,7 @@ function inplayscenes_memberprofile() {
     $activeinplplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
-    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_active_inplay).")
     AND relevant != 0
     ORDER BY i.date DESC
@@ -3004,7 +3004,7 @@ function inplayscenes_memberprofile() {
     $archiveinplplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
-    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_archive_inplay).")
     AND relevant != 0
     ORDER BY i.date DESC
@@ -3022,7 +3022,7 @@ function inplayscenes_memberprofile() {
     $allsideplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
-    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_sideplay).")
     AND relevant != 0
     ");
@@ -3039,7 +3039,7 @@ function inplayscenes_memberprofile() {
     $allnotrelevantscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
-    WHERE (concat(',',partners,',') LIKE '%,".$profileUID.",%')
+    WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND relevant != 1
     ");
 
@@ -3192,7 +3192,7 @@ function inplayscenes_misc() {
             $character_scenes = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
             LEFT JOIN ".TABLE_PREFIX."threads t 
             ON (i.tid = t.tid) 
-            WHERE (concat(',',partners,',') LIKE '%,".$charaID.",%')
+            WHERE (concat(',',i.partners,',') LIKE '%,".$charaID.",%')
             AND fid IN (".implode(',', $active_forums).")
             ".$order_by_clause."
             ");
@@ -3555,7 +3555,7 @@ function inplayscenes_misc() {
         // Charakter
         if (!empty($charactername)) {
             $characterUid = $db->fetch_field($db->query("SELECT uid FROM ".TABLE_PREFIX."users WHERE username = '".$charactername."'"), "uid");
-            $where[] = "(concat(',',partners,',') LIKE '%,".$characterUid.",%')";
+            $where[] = "(concat(',',i.partners,',') LIKE '%,".$characterUid.",%')";
         }
 
         // Spieler
@@ -3569,7 +3569,7 @@ function inplayscenes_misc() {
                 ");
     
                 while ($player = $db->fetch_array($player_query)) {
-                    $player_conditions[] = "(concat(',',partners,',') LIKE '%,".$player['ufid'].",%')";
+                    $player_conditions[] = "(concat(',',i.partners,',') LIKE '%,".$player['ufid'].",%')";
                 }
             } else {
                 $player_query = $db->query("SELECT * FROM ".TABLE_PREFIX."application_ucp_userfields uf
@@ -3579,7 +3579,7 @@ function inplayscenes_misc() {
                 ");
     
                 while ($player = $db->fetch_array($player_query)) {
-                    $player_conditions[] = "(concat(',',partners,',') LIKE '%,".$player['uid'].",%')";
+                    $player_conditions[] = "(concat(',',i.partners,',') LIKE '%,".$player['uid'].",%')";
                 }
             }
 
@@ -4607,8 +4607,8 @@ function inplayscenes_user_update($datahandler) {
         $old_username = $user['username'];
         $new_username = $datahandler->user_update_data['username'];
 
-        $allinplayscenes_query = $db->query("SELECT isid, partners_username FROM ".TABLE_PREFIX."inplayscenes
-        WHERE concat(',',partners,',') LIKE '%,".$user['uid'].",%'
+        $allinplayscenes_query = $db->query("SELECT isid, partners_username FROM ".TABLE_PREFIX."inplayscenes i
+        WHERE concat(',',i.partners,',') LIKE '%,".$user['uid'].",%'
         ");
 
         if ($db->num_rows($allinplayscenes_query) > 0) {
@@ -4650,8 +4650,8 @@ function inplayscenes_update_username(){
     $new_username = $db->escape_string($mybb->get_input('username'));
     $old_username = $db->escape_string($mybb->user['username']);
 
-    $allinplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes
-    WHERE (concat(',',partners,',') LIKE '%,".$changeChara.",%')
+    $allinplayscenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i
+    WHERE (concat(',',i.partners,',') LIKE '%,".$changeChara.",%')
     ");
 
     if ($db->num_rows($allinplayscenes_query) > 0) {
