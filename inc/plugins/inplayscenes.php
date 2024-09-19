@@ -179,13 +179,13 @@ function inplayscenes_uninstall(){
 
     // DATENBANKFELDER LÖSCHEN
     if ($db->field_exists("inplayscenes_notification", "users")) {
-        $db->write_query("ALTER TABLE `" . TABLE_PREFIX . "users` DROP `inplayscenes_notification`;");
+        $db->write_query("ALTER TABLE ".TABLE_PREFIX."users DROP inplayscenes_notification;");
     }
     if ($db->field_exists("inplayscenes_reminder_days", "users")) {
-        $db->write_query("ALTER TABLE `" . TABLE_PREFIX . "users` DROP `inplayscenes_reminder_days`;");
+        $db->write_query("ALTER TABLE ".TABLE_PREFIX."users DROP inplayscenes_reminder_days;");
     }
     if ($db->field_exists("inplayscenes_reminder_status", "users")) {
-        $db->write_query("ALTER TABLE `" . TABLE_PREFIX . "users` DROP `inplayscenes_reminder_status`;");
+        $db->write_query("ALTER TABLE ".TABLE_PREFIX."users DROP inplayscenes_reminder_status;");
     }
 
     // TEMPLATGRUPPE LÖSCHEN
@@ -301,7 +301,6 @@ function inplayscenes_deactivate(){
 		$alertTypeManager->deleteByCode('inplayscenes_alert_newreply');
 		$alertTypeManager->deleteByCode('inplayscenes_alert_openadd');
 	}
-	
 }
 
 #####################################
@@ -329,6 +328,7 @@ function inplayscenes_admin_rpgstuff_permissions(&$admin_permissions) {
 
 // im Menü einfügen
 function inplayscenes_admin_rpgstuff_menu(&$sub_menu) {
+    
 	global $mybb, $lang;
 	
     $lang->load('inplayscenes');
@@ -1847,6 +1847,8 @@ function inplayscenes_editpost() {
     } else {
         $trigger_warning = "";
     }
+
+    $lang->inplayscenes_fields_partners_hint = "";
 
     eval("\$edit_inplayscenes = \"".$templates->get("inplayscenes_newthread")."\";");
 }
@@ -4530,7 +4532,7 @@ function inplayscenes_user_delete() {
 
         $subforum_fid = false;
         foreach ($possible_month_names as $month_name) {
-            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid = ".$inplay_archive.""), 'fid');
+            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid IN (".$inplay_archive.")"), 'fid');
             if ($subforum_fid) {
                 break;
             }
@@ -4570,7 +4572,7 @@ function inplayscenes_user_delete() {
 
         $subforum_fid = false;
         foreach ($possible_month_names as $month_name) {
-            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid = ".$inplay_archive.""), 'fid');
+            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid IN (".$inplay_archive.")"), 'fid');
             if ($subforum_fid) {
                 break; 
             }
