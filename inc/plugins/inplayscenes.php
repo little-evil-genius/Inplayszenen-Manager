@@ -20,6 +20,8 @@ if(!defined("IN_MYBB")){
 }
 
 // HOOKS
+$plugins->add_hook("admin_config_settings_change", "inplayscenes_settings_change");
+$plugins->add_hook("admin_settings_print_peekers", "inplayscenes_settings_peek");
 $plugins->add_hook("admin_rpgstuff_action_handler", "inplayscenes_admin_rpgstuff_action_handler");
 $plugins->add_hook("admin_rpgstuff_permissions", "inplayscenes_admin_rpgstuff_permissions");
 $plugins->add_hook("admin_rpgstuff_menu", "inplayscenes_admin_rpgstuff_menu");
@@ -38,11 +40,17 @@ $plugins->add_hook("class_moderation_delete_thread_start", "inplayscenes_delete_
 $plugins->add_hook("class_moderation_delete_post_start", "inplayscenes_delete_post");
 $plugins->add_hook("editpost_deletepost", "inplayscenes_deletepost");
 $plugins->add_hook('forumdisplay_thread_end', 'inplayscenes_forumdisplay_thread');
+$plugins->add_hook("forumdisplay_before_thread", "inplayscenes_forumdisplay_before_thread");
+$plugins->add_hook("build_forumbits_forum", "inplayscenes_build_forumbits_forum");
 $plugins->add_hook("postbit", "inplayscenes_postbit"); // normaler Postbit
 $plugins->add_hook("postbit_prev", "inplayscenes_postbit"); // Vorschau
 $plugins->add_hook("postbit_pm", "inplayscenes_postvariables"); // Private Nachricht
 $plugins->add_hook("postbit_announcement", "inplayscenes_postvariables"); // Ankündigungen
 $plugins->add_hook('showthread_start', 'inplayscenes_showthread_start');
+$plugins->add_hook("no_permission", "inplayscenes_no_permission");
+$plugins->add_hook("search_do_search_process", "inplayscenes_search_process");
+$plugins->add_hook("search_results_end", "inplayscenes_search_results");
+$plugins->add_hook("search_results_post", "inplayscenes_search_results_post");
 $plugins->add_hook('member_profile_end', 'inplayscenes_memberprofile');
 $plugins->add_hook("misc_start", "inplayscenes_misc");
 $plugins->add_hook('global_intermediate', 'inplayscenes_global');
@@ -52,8 +60,6 @@ $plugins->add_hook("usercp_do_changename_end", "inplayscenes_update_username");
 $plugins->add_hook("fetch_wol_activity_end", "inplayscenes_online_activity");
 $plugins->add_hook("build_friendly_wol_location_end", "inplayscenes_online_location");
 $plugins->add_hook("xmlhttp_get_users_end", "inplayscenes_playername_autocompled");
-
-// MyAlerts
 if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
 	$plugins->add_hook("global_start", "inplayscenes_myalerts");
 }
@@ -236,6 +242,8 @@ function inplayscenes_activate(){
 	find_replace_templatesets('showthread', '#'.preg_quote('{$newreply}').'#', '{$inplayscenes_edit} {$newreply}');
 	find_replace_templatesets('showthread', '#'.preg_quote('<tr><td id="posts_container">').'#', '{$inplayscenes_showthread} <tr><td id="posts_container">');
 	find_replace_templatesets('member_profile', '#'.preg_quote('{$bannedbit}').'#', '{$inplayscenes_memberprofile} {$bannedbit}');
+	find_replace_templatesets('search_results_threads', '#'.preg_quote('{$lang->search_results}').'#', '{$lang->search_results} {$count_hidescenes}');
+	find_replace_templatesets('search_results_posts', '#'.preg_quote('{$lang->search_results}').'#', '{$lang->search_results} {$count_hidescenes}');
 	
     // MyALERTS STUFF
     if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
@@ -288,6 +296,8 @@ function inplayscenes_deactivate(){
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_edit}')."#i", '', 0);
 	find_replace_templatesets("showthread", "#".preg_quote('{$inplayscenes_showthread}')."#i", '', 0);
 	find_replace_templatesets("member_profile", "#".preg_quote('{$inplayscenes_memberprofile}')."#i", '', 0);
+	find_replace_templatesets("search_results_threads", "#".preg_quote('{$count_hidescenes}')."#i", '', 0);
+	find_replace_templatesets("search_results_posts", "#".preg_quote('{$count_hidescenes}')."#i", '', 0);
 
     // MyALERT STUFF
     if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
@@ -306,6 +316,24 @@ function inplayscenes_deactivate(){
 #####################################
 ### THE BIG MAGIC - THE FUNCTIONS ###
 #####################################
+
+// EINSTELLUNGEN VERSTECKEN
+function inplayscenes_settings_change(){
+    
+    global $db, $mybb, $inplayscenes_settings_peeker;
+
+    $result = $db->simple_select('settinggroups', 'gid', "name='inplayscenes'", array("limit" => 1));
+    $group = $db->fetch_array($result);
+    $inplayscenes_settings_peeker = ($mybb->get_input('gid') == $group['gid']) && ($mybb->request_method != 'post');
+}
+function inplayscenes_settings_peek(&$peekers){
+
+    global $inplayscenes_settings_peeker;
+
+    if ($inplayscenes_settings_peeker) {
+        $peekers[] = 'new Peeker($(".setting_inplayscenes_hide"), $("#row_setting_inplayscenes_hidetype, #row_setting_inplayscenes_hideprofile"),/1/,true)'; 
+    }
+}
 
 // ADMIN BEREICH - KONFIGURATION //
 
@@ -329,7 +357,7 @@ function inplayscenes_admin_rpgstuff_permissions(&$admin_permissions) {
 // im Menü einfügen
 function inplayscenes_admin_rpgstuff_menu(&$sub_menu) {
     
-	global $mybb, $lang;
+	global $lang;
 	
     $lang->load('inplayscenes');
 
@@ -348,13 +376,13 @@ function inplayscenes_admin_rpgstuff_menu_updates(&$sub_menu) {
     if ($db->table_exists("scenetracker") || $db->table_exists("ipt_scenes_partners") || $db->field_exists("iport", "threads")) {
         
         $lang->load('inplayscenes');
-
+    
         $sub_menu[] = [
             "id" => "inplayscenes_updates",
             "title" => $lang->inplayscenes_updates_nav,
             "link" => "index.php?module=rpgstuff-inplayscenes_updates"
         ];
-
+    
     }
 }
 
@@ -922,6 +950,7 @@ function inplayscenes_admin_manage() {
                 }
 
                 if(empty($errors)) {
+
                     // Inplaytracker 2.0 von sparks fly
                     if ($selected_tracker == "jule2") {
         
@@ -983,19 +1012,55 @@ function inplayscenes_admin_manage() {
                                 $ipdaytime = $db->escape_string($thread['ipdaytime']);
                                 $trigger_warning = '';
                                 $relevant = 1;
-        
-                                switch ($thread['openscene']) {
-                                    case -1:
-                                        $openscene = 0;
-                                        break;
-                                    case 0:
-                                        $openscene = 1;
-                                        break;
-                                    case 1:
-                                        $openscene = 2;
-                                        break;
-                                    default:
-                                        $openscene = 0;
+ 
+                                // Falls die Spalte hidescene_readable existiert -> den Wert
+                                if (array_key_exists('hidescene_readable', $thread)) {
+                                    // Sichtbar
+                                    if ($thread['hidescene_readable'] == 1) {
+                                        switch ($thread['openscene']) {
+                                            case -1:
+                                                $scenetype = 0;
+                                                break;
+                                            case 0:
+                                                $scenetype = 1;
+                                                break;
+                                            case 1:
+                                                $scenetype = 2;
+                                                break;
+                                            default:
+                                                $scenetype = 0;
+                                        }
+                                        $hidetype = 0;
+                                    } 
+                                    // versteckt
+                                    else if ($thread['hidescene_readable'] == 0) { 
+                                        $scenetype = 3;
+                                        switch ($thread['hidescene_type']) {
+                                            case 0:
+                                                $hidetype = 2;
+                                                break;
+                                            case 1:
+                                                $hidetype = 1;
+                                                break;
+                                            default:
+                                            $hidetype = 1;
+                                        }
+                                    }
+                                } else {
+                                    switch ($thread['openscene']) {
+                                        case -1:
+                                            $scenetype = 0;
+                                            break;
+                                        case 0:
+                                            $scenetype = 1;
+                                            break;
+                                        case 1:
+                                            $scenetype = 2;
+                                            break;
+                                        default:
+                                            $scenetype = 0;
+                                    }
+                                    $hidetype = 0;
                                 }
         
                                 $ipdate = $thread['ipdate'];
@@ -1046,8 +1111,9 @@ function inplayscenes_admin_manage() {
                                     'partners_username' => $partners_username,
                                     'date' => $date,
                                     'trigger_warning' => $trigger_warning,
-                                    'openscene' => (int)$openscene,                                
+                                    'scenetype' => (int)$scenetype,                                
                                     'postorder' => (int)$postorder,
+                                    'hidetype' => (int)$hidetype,
                                     'iport' => $iport,
                                     'ipdaytime' => $ipdaytime,
                                     'relevant' => $relevant,                        
@@ -1096,7 +1162,7 @@ function inplayscenes_admin_manage() {
                             'description' => $db->escape_string('Beschreibe in maximal 140 Zeichen, worum es in dieser Szene geht.'),
                             'type' => $db->escape_string('textarea'),
                             'options' => '',
-                            'required' => (int)1,
+                            'required' => (int)0,
                             'edit' => (int)1,
                             'disporder' => (int)2,
                             'allow_html' => (int)0,
@@ -1109,8 +1175,22 @@ function inplayscenes_admin_manage() {
                     
                             $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD location TEXT NOT NULL;");
                             $db->write_query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD shortdesc TEXT NOT NULL;");
+
+                            // Überprüfung, ob Annes versteckte Szenen Erweiterung vorhanden ist
+                            $privatetype_column_exists = false;
+                            $columns_result_a = $db->query("SHOW COLUMNS FROM ".TABLE_PREFIX."threads LIKE 'privatetype'");
+                            if ($db->num_rows($columns_result_a) > 0) {
+                                $privatetype_column_exists = true;
+                            }
         
-                            $scenes_result = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes");
+                            // Überprüfung, ob Katjas hidescenes Plugin vorhanden ist
+                            $hidescene_column_exists = false;
+                            $columns_result_k = $db->query("SHOW COLUMNS FROM ".TABLE_PREFIX."threads LIKE 'hidescene_readable'");
+                            if ($db->num_rows($columns_result_k) > 0) {
+                                $hidescene_column_exists = true;
+                            }
+        
+                            $scenes_result = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes s WHERE tid IN (SELECT tid FROM ".TABLE_PREFIX."threads t WHERE t.tid = s.tid)");
         
                             $all_successful = true;
                             while ($scene = $db->fetch_array($scenes_result)) {
@@ -1121,12 +1201,84 @@ function inplayscenes_admin_manage() {
                                 $postorder = 1; 
                                 $relevant = 1; 
               
-                                $date = date('Y-m-d', $scene['date']);
-              
-                                if ($scene['openscene'] == 1) {
-                                    $openscene = 2;
+                                if (!empty($scene['date'])) {
+                                    $date = date('Y-m-d', $scene['date']);
                                 } else {
-                                    $openscene = 0;
+                                    $date = "1970-01-01";
+                                }
+              
+                                // Annes versteckte Szenen
+                                if ($privatetype_column_exists) {
+                                    $thread_result = $db->query("SELECT privatetype FROM ".TABLE_PREFIX."threads WHERE tid = '".$tid."'");
+                                    $thread = $db->fetch_array($thread_result);
+                                    switch ($thread['privatetype']) {
+                                        case -1:
+                                            $scenetype = 0;
+                                            $hidetype = 0;
+                                            break;
+                                        case 0:
+                                            $scenetype = 1;
+                                            $hidetype = 0;
+                                            break;
+                                        case 1:
+                                            $scenetype = 2;
+                                            $hidetype = 0;
+                                            break;
+                                        case 2:
+                                            $scenetype = 3;
+                                            $hidetype = 1;
+                                            break;
+                                        default:
+                                            $scenetype = 0;
+                                            $hidetype = 0;
+                                    }
+                                } 
+                                // Katjas versteckte Szenen
+                                else if ($hidescene_column_exists) {
+                                    $thread_result = $db->query("SELECT hidescene_readable, hidescene_type FROM ".TABLE_PREFIX."threads WHERE tid = '".$tid."'");
+                                    $thread = $db->fetch_array($thread_result);
+                                    // Sichtbar
+                                    if ($thread['hidescene_readable'] == 1) {
+                                        switch ($thread['openscene']) {
+                                            case -1:
+                                                $scenetype = 0;
+                                                break;
+                                            case 0:
+                                                $scenetype = 1;
+                                                break;
+                                            case 1:
+                                                $scenetype = 2;
+                                                break;
+                                            default:
+                                                $scenetype = 0;
+                                        }
+                                        $hidetype = 0;
+                                    } 
+                                    // versteckt
+                                    else if ($thread['hidescene_readable'] == 0) { 
+                                        $scenetype = 3;
+                                        switch ($thread['hidescene_type']) {
+                                            case 0:
+                                                $hidetype = 2;
+                                                break;
+                                            case 1:
+                                                $hidetype = 1;
+                                                break;
+                                            default:
+                                            $hidetype = 1;
+                                        }
+                                    }
+                                } else {
+                                    if (array_key_exists('openscene', $scene)) {
+                                        if ($scene['openscene'] == 1) {
+                                            $scenetype = 2;
+                                        } else {
+                                            $scenetype = 0;
+                                        }
+                                    } else {
+                                        $scenetype = 0;
+                                    }
+                                    $hidetype = 0;
                                 }
               
                                 $partners_result = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes_partners 
@@ -1160,7 +1312,8 @@ function inplayscenes_admin_manage() {
                                     'partners_username' => $partners_username,
                                     'date' => $date,
                                     'trigger_warning' => $trigger_warning,
-                                    'openscene' => (int)$openscene,
+                                    'scenetype' => (int)$scenetype,
+                                    'hidetype' => (int)$hidetype,
                                     'postorder' => (int)$postorder,
                                     'shortdesc' => $shortdesc,
                                     'location' => $location,
@@ -1236,7 +1389,6 @@ function inplayscenes_admin_manage() {
                                 $place = $db->escape_string($scene['scenetracker_place']);
                                 $trigger_warning = $db->escape_string($scene['scenetracker_trigger']);
                                 $partners_username = $db->escape_string($scene['scenetracker_user']);
-                                $openscene = 0; 
                                 $postorder = 1; 
                                 $relevant = 1;
 
@@ -1246,6 +1398,32 @@ function inplayscenes_admin_manage() {
                                     $time = $db->escape_string($scene['scenetracker_time_text']);
                                 } else {
                                     $time = date('H:i', strtotime($scene['scenetracker_date']));    
+                                }
+ 
+                                // Falls die Spalte hidescene_readable existiert -> den Wert
+                                if (array_key_exists('hidescene_readable', $scene)) {
+                                    // Sichtbar
+                                    if ($scene['hidescene_readable'] == 1) {
+                                        $scenetype = 0;
+                                        $hidetype = 0;
+                                    } 
+                                    // versteckt
+                                    else if ($scene['hidescene_readable'] == 0) { 
+                                        $scenetype = 3;
+                                        switch ($scene['hidescene_type']) {
+                                            case 0:
+                                                $hidetype = 2;
+                                                break;
+                                            case 1:
+                                                $hidetype = 1;
+                                                break;
+                                            default:
+                                            $hidetype = 1;
+                                        }
+                                    }
+                                } else {
+                                    $scenetype = 0;
+                                    $hidetype = 0;
                                 }
         
                                 $partners_result = $db->query("SELECT * FROM ".TABLE_PREFIX."scenetracker
@@ -1265,7 +1443,8 @@ function inplayscenes_admin_manage() {
                                     'partners_username' => $partners_username,
                                     'date' => $date,
                                     'trigger_warning' => $trigger_warning,
-                                    'openscene' => (int)$openscene,
+                                    'scenetype' => (int)$scenetype,
+                                    'hidetype' => (int)$hidetype,
                                     'postorder' => (int)$postorder,
                                     'relevant' => (int)$relevant,
                                     'place' => $place,
@@ -1299,7 +1478,6 @@ function inplayscenes_admin_manage() {
 				$page->output_inline_error($errors);
 			}
     
-            // Form for selecting tracker system
             $form = new Form("index.php?module=rpgstuff-inplayscenes_updates", "post", "", 1);
             $form_container = new FormContainer($lang->inplayscenes_updates_page);
             echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
@@ -1395,7 +1573,7 @@ function inplayscenes_admin_update_plugin(&$table) {
         rebuild_settings();
 
         // Templates 
-        inplayscenes_templates();
+        inplayscenes_templates('update');
 
         // Stylesheet
         $update_data = inplayscenes_stylesheet_update();
@@ -1469,7 +1647,10 @@ function inplayscenes_newthread_start() {
     $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+    $hideprofile_setting = $mybb->settings['inplayscenes_hideprofile'];
 
     // zurück, wenn es nicht der Inplay Bereich ist
     $inplayforums = $inplay_forum.",".$sideplays_forum;
@@ -1489,7 +1670,9 @@ function inplayscenes_newthread_start() {
         $date = $mybb->get_input('date');
 
         $triggerwarning = $mybb->get_input('trigger');
-        $openscene_value = $mybb->get_input('openscene');
+        $scenetype_value = $mybb->get_input('scenetype');
+        $hidetype_value = $mybb->get_input('hidetype');
+        $hideprofile_value = $mybb->get_input('hideprofile');
 
         $own_inplayscenesfields = inplayscenes_generate_fields(null, true);
         
@@ -1511,10 +1694,13 @@ function inplayscenes_newthread_start() {
 
             $characters = implode(",", $usernames);
             $postorder_value = $draft['postorder'];
-            $date = $draft['date'];
+            list($year, $month, $day) = explode('-', $draft['date']);
+            $date = sprintf('%04d-%02d-%02d', $year, $month, $day); 
 
             $triggerwarning = $draft['trigger_warning'];
-            $openscene_value = $draft['openscene'];
+            $scenetype_value = $draft['scenetype'];
+            $hidetype_value = $draft['hidetype'];
+            $hideprofile_value = $draft['hideprofile'];
 
             $own_inplayscenesfields = inplayscenes_generate_fields($draft);
 
@@ -1524,7 +1710,19 @@ function inplayscenes_newthread_start() {
             $date = "";
 
             $triggerwarning = "";
-            $openscene_value = 0;
+            $scenetype_value = 0;
+
+            if ($hidetype_setting == 1) { 
+                $hidetype_value = 2;
+            } else {
+                $hidetype_value = 1;
+            }
+
+            if ($hideprofile_setting == 1) { 
+                $hideprofile_value = 2;
+            } else {
+                $hideprofile_value = 1;
+            }
 
             $own_inplayscenesfields = inplayscenes_generate_fields();
         }
@@ -1532,10 +1730,39 @@ function inplayscenes_newthread_start() {
 
     $postorder_select = inplayscenes_generate_postorder_select($postorder_value);
 
-    if ($open_setting == 1) {
-        $openscene_select = inplayscenes_generate_openscene_select($openscene_value);
+    if ($scenetype_setting == 1 || $hide_setting == 1) {
+        $scenetype_select = inplayscenes_generate_scenetype_select($scenetype_value);
     } else {
-        $openscene_select = "";
+        $scenetype_select = "";
+    }
+
+    if ($hide_setting == 1) {
+        if ($hidetype_setting == 2) {
+            $hidetype_select = inplayscenes_generate_hidetype_select($hidetype_value);
+        } else {
+            if ($hidetype_setting == 0) {
+                $hidetype_select = $lang->inplayscenes_fields_hidetype_info;
+            } else {
+                $hidetype_select = $lang->inplayscenes_fields_hidetype_all;
+            }
+        }
+        if ($hideprofile_setting == 2) {
+            $hideprofile_select = inplayscenes_generate_hideprofile_select($hideprofile_value);
+        } else {
+            if ($hideprofile_setting == 0) {
+                $hideprofile_select = $lang->inplayscenes_fields_hideprofile_info;
+            } else {
+                $hideprofile_select = $lang->inplayscenes_fields_hideprofile_all;
+            }
+        }
+        if ($hidetype_setting == 2 && $hideprofile_setting == 2) {
+            $inplayscenes_fields_hide_desc = $lang->inplayscenes_fields_hide_desc;
+        } else {
+            $inplayscenes_fields_hide_desc = $lang->inplayscenes_fields_hide_team;
+        }
+    } else {
+        $hidetype_select = "";
+        $hideprofile_select = "";
     }
 
     if ($trigger_setting == 1) { 
@@ -1602,6 +1829,9 @@ function inplayscenes_do_newthread() {
     // EINSTELLUNGEN
     $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+    $hideprofile_setting = $mybb->settings['inplayscenes_hideprofile'];
 
     // zurück, wenn es nicht der Inplay Bereich ist
     $inplayforums = $inplay_forum.",".$sideplays_forum;
@@ -1633,13 +1863,21 @@ function inplayscenes_do_newthread() {
     $ownuid = $mybb->user['uid'];
     $ownusername = $mybb->user['username'];
 
+    // Nullen Abfangen für Jahre vor 1000
+    $dateInput = $mybb->get_input('date');
+    list($year, $month, $day) = explode('-', $dateInput);
+    $year = intval($year);
+    $formattedDate = $year.'-'.$month.'-'.$day;
+
     $new_scene = array(
         'tid' => (int)$tid,
         'partners' => $ownuid.",".$charactersUids,
         'partners_username' => $db->escape_string($ownusername.",".$mybb->get_input('characters')),
-        'date' => $db->escape_string($mybb->get_input('date')),
+        'date' => $db->escape_string($formattedDate),
         'trigger_warning' => $db->escape_string($mybb->get_input('trigger')),
-        'openscene' => (int)$mybb->get_input('openscene'),
+        'scenetype' => (int)$mybb->get_input('scenetype'),
+        'hidetype' => (int)$mybb->get_input('hidetype'),
+        'hideprofile' => (int)$mybb->get_input('hideprofile'),
         'postorder' => (int)$mybb->get_input('postorder'),
     );
 
@@ -1686,6 +1924,13 @@ function inplayscenes_do_newthread() {
 
         $thread = get_thread($tid);
 
+        $playername_setting = $mybb->settings['inplayscenes_playername'];
+        if (is_numeric($playername_setting)) {
+            $playername_fid = "fid".$playername_setting;
+        } else {
+            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        }
+
         // MyAlerts möglich
         if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
     
@@ -1712,9 +1957,21 @@ function inplayscenes_do_newthread() {
                     }
 
                 } else { // PN
+                    if (is_numeric($playername_setting)) {
+                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    } else {
+                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
+                    if (!empty($playername)) {
+                        $Playername = $playername;
+                    } else {
+                        $Playername = get_user($CharaUid)['username'];
+                    }
+
+                    $pm_message = $lang->sprintf($lang->inplayscenes_pm_newthread_message, $Playername, 'showthread.php?tid='.$tid.'&pid='.$thread['firstpost'].'#pid'.$thread['firstpost'], $thread['subject']);
                     $pm_change = array(
                         "subject" => $lang->inplayscenes_pm_newthread_subject,
-                        "message" => $parser->parse_message($lang->inplayscenes_pm_newthread_message, $parser_array),
+                        "message" => $parser->parse_message($pm_message, $parser_array),
                         "fromid" => $mybb->user['uid'], // von wem kommt diese
                         "toid" => $CharaUid, // an wen geht diese
                         "icon" => "0",
@@ -1742,9 +1999,21 @@ function inplayscenes_do_newthread() {
 
             // Jedem Partner
             foreach ($characters_uids as $CharaUid) {
+                if (is_numeric($playername_setting)) {
+                    $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                } else {
+                    $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                }
+                if (!empty($playername)) {
+                    $Playername = $playername;
+                } else {
+                    $Playername = get_user($CharaUid)['username'];
+                }
+
+                $pm_message = $lang->sprintf($lang->inplayscenes_pm_newthread_message, $Playername, 'showthread.php?tid='.$tid.'&pid='.$thread['firstpost'].'#pid'.$thread['firstpost'], $thread['subject']);
                 $pm_change = array(
                     "subject" => $lang->inplayscenes_pm_newthread_subject,
-                    "message" => $parser->parse_message($lang->inplayscenes_pm_newthread_message, $parser_array),
+                    "message" => $parser->parse_message($pm_message, $parser_array),
                     "fromid" => $mybb->user['uid'], // von wem kommt diese
                     "toid" => $CharaUid, // an wen geht diese
                     "icon" => 0,
@@ -1782,7 +2051,10 @@ function inplayscenes_editpost() {
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+    $hideprofile_setting = $mybb->settings['inplayscenes_hideprofile'];
 
     // zurück, wenn es nicht der Inplay Bereich ist
     $inplayforums = $inplay_forum.",".$inplay_archive.",".$sideplays_forum.",".$sideplays_archive;
@@ -1806,7 +2078,9 @@ function inplayscenes_editpost() {
         $date = $mybb->get_input('date');
 
         $triggerwarning = $mybb->get_input('trigger');
-        $openscene_value = $mybb->get_input('openscene');
+        $scenetype_value = $mybb->get_input('scenetype');
+        $hidetype_value = $mybb->get_input('hidetype');
+        $hideprofile_value = $mybb->get_input('hideprofile');
 
         $own_inplayscenesfields = inplayscenes_generate_fields(null, true, true);
 
@@ -1823,20 +2097,52 @@ function inplayscenes_editpost() {
 
         $characters = implode(",", $usernames);
         $postorder_value = $draft['postorder'];
-        $date = $draft['date'];
+        list($year, $month, $day) = explode('-', $draft['date']);
+        $date = sprintf('%04d-%02d-%02d', $year, $month, $day); 
 
         $triggerwarning = $draft['trigger_warning'];
-        $openscene_value = $draft['openscene'];
+        $scenetype_value = $draft['scenetype'];
+        $hidetype_value = $draft['hidetype'];
+        $hideprofile_value = $draft['hideprofile'];
 
         $own_inplayscenesfields = inplayscenes_generate_fields($draft, null, true);
     }
 
     $postorder_select = inplayscenes_generate_postorder_select($postorder_value);
 
-    if ($open_setting == 1) {
-        $openscene_select = inplayscenes_generate_openscene_select($openscene_value);
+    if ($scenetype_setting == 1 || $hide_setting == 1) {
+        $scenetype_select = inplayscenes_generate_scenetype_select($scenetype_value);
     } else {
-        $openscene_select = "";
+        $scenetype_select = "";
+    }
+
+    if ($hide_setting == 1) {
+        if ($hidetype_setting == 2) {
+            $hidetype_select = inplayscenes_generate_hidetype_select($hidetype_value);
+        } else {
+            if ($hidetype_setting == 0) {
+                $hidetype_select = $lang->inplayscenes_fields_hidetype_info;
+            } else {
+                $hidetype_select = $lang->inplayscenes_fields_hidetype_all;
+            }
+        }
+        if ($hideprofile_setting == 2) {
+            $hideprofile_select = inplayscenes_generate_hideprofile_select($hideprofile_value);
+        } else {
+            if ($hideprofile_setting == 0) {
+                $hideprofile_select = $lang->inplayscenes_fields_hideprofile_info;
+            } else {
+                $hideprofile_select = $lang->inplayscenes_fields_hideprofile_all;
+            }
+        }
+        if ($hidetype_setting == 2 && $hideprofile_setting == 2) {
+            $inplayscenes_fields_hide_desc = $lang->inplayscenes_fields_hide_desc;
+        } else {
+            $inplayscenes_fields_hide_desc = $lang->inplayscenes_fields_hide_team;
+        }
+    } else {
+        $hidetype_select = "";
+        $hideprofile_select = "";
     }
 
     if ($trigger_setting == 1) { 
@@ -1942,12 +2248,20 @@ function inplayscenes_do_editpost() {
     }
     $charactersUids = implode(",", $characters_uids);
 
+    // Nullen Abfangen für Jahre vor 1000
+    $dateInput = $mybb->get_input('date');
+    list($year, $month, $day) = explode('-', $dateInput);
+    $year = intval($year);
+    $formattedDate = $year.'-'.$month.'-'.$day;
+
     $update_scene = array(
         'partners' => $charactersUids,
         'partners_username' => $db->escape_string($mybb->get_input('characters')),
-        'date' => $db->escape_string($mybb->get_input('date')),
+        'date' => $db->escape_string($formattedDate),
         'trigger_warning' => $db->escape_string($mybb->get_input('trigger')),
-        'openscene' => (int)$mybb->get_input('openscene'),
+        'scenetype' => (int)$mybb->get_input('scenetype'),
+        'hidetype' => (int)$mybb->get_input('hidetype'),
+        'hideprofile' => (int)$mybb->get_input('hideprofile'),
         'postorder' => (int)$mybb->get_input('postorder'),
     );
 
@@ -2020,6 +2334,13 @@ function inplayscenes_do_newreply() {
             unset($characters_uids[$key]);
         }
 
+        $playername_setting = $mybb->settings['inplayscenes_playername'];
+        if (is_numeric($playername_setting)) {
+            $playername_fid = "fid".$playername_setting;
+        } else {
+            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        }
+
         // MyAlerts möglich
         if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
     
@@ -2046,9 +2367,21 @@ function inplayscenes_do_newreply() {
                     }
 
                 } else { // PN
+                    if (is_numeric($playername_setting)) {
+                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    } else {
+                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
+                    if (!empty($playername)) {
+                        $Playername = $playername;
+                    } else {
+                        $Playername = get_user($CharaUid)['username'];
+                    }
+
+                    $pm_message = $lang->sprintf($lang->inplayscenes_pm_newreply_message, $Playername, 'showthread.php?tid='.$tid.'&pid='.$lastpost.'#pid'.$lastpost, $thread['subject']);
                     $pm_change = array(
-                        "subject" => $lang->inplayscenes_pm_newreply_subject,
-                        "message" => $parser->parse_message($lang->inplayscenes_pm_newreply_message, $parser_array),
+                        "subject" => $lang->sprintf($lang->inplayscenes_pm_newreply_subject, $thread['subject']),
+                        "message" => $parser->parse_message($pm_message, $parser_array),
                         "fromid" => $mybb->user['uid'], // von wem kommt diese
                         "toid" => $CharaUid, // an wen geht diese
                         "icon" => "0",
@@ -2076,9 +2409,21 @@ function inplayscenes_do_newreply() {
 
             // Jedem Partner
             foreach ($characters_uids as $CharaUid) {
+                if (is_numeric($playername_setting)) {
+                    $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                } else {
+                    $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                }
+                if (!empty($playername)) {
+                    $Playername = $playername;
+                } else {
+                    $Playername = get_user($CharaUid)['username'];
+                }
+
+                $pm_message = $lang->sprintf($lang->inplayscenes_pm_newreply_message, $Playername, 'showthread.php?tid='.$tid.'&pid='.$lastpost.'#pid'.$lastpost, $thread['subject']);
                 $pm_change = array(
-                    "subject" => $lang->inplayscenes_pm_newreply_subject,
-                    "message" => $parser->parse_message($lang->inplayscenes_pm_newreply_message, $parser_array),
+                    "subject" => $lang->sprintf($lang->inplayscenes_pm_newreply_subject, $thread['subject']),
+                    "message" => $parser->parse_message($pm_message, $parser_array),
                     "fromid" => $mybb->user['uid'], // von wem kommt diese
                     "toid" => $CharaUid, // an wen geht diese
                     "icon" => "0",
@@ -2186,7 +2531,10 @@ function inplayscenes_forumdisplay_thread() {
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $month_setting = $mybb->settings['inplayscenes_months'];
+    $color_setting = $mybb->settings['inplayscenes_groupcolor'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
     // CSS Variable zum Verstecken 
     $display_onlyinplay = "style=\"display:none;\"";
@@ -2200,7 +2548,7 @@ function inplayscenes_forumdisplay_thread() {
         'scenedate' => '',
         'partnerusers' => '',
         'postorder' => '',
-        'openscene' => '',
+        'scenetype' => '',
         'trigger' => '',
     ];
 
@@ -2222,11 +2570,38 @@ function inplayscenes_forumdisplay_thread() {
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
+
+    $months = array(
+        '01' => $lang->inplayscenes_jan,
+        '02' => $lang->inplayscenes_feb,
+        '03' => $lang->inplayscenes_mar,
+        '04' => $lang->inplayscenes_apr,
+        '05' => $lang->inplayscenes_mai,
+        '06' => $lang->inplayscenes_jun,
+        '07' => $lang->inplayscenes_jul,
+        '08' => $lang->inplayscenes_aug,
+        '09' => $lang->inplayscenes_sep,
+        '10' => $lang->inplayscenes_okt,
+        '11' => $lang->inplayscenes_nov,
+        '12' => $lang->inplayscenes_dez
+    );
 
     // CSS Variable zum Verstecken
     $display_offplay = "style=\"display:none;\"";
@@ -2235,8 +2610,12 @@ function inplayscenes_forumdisplay_thread() {
     // Infos aus der DB ziehen
     $info = $db->fetch_array($db->simple_select('inplayscenes', '*', 'tid = ' . $tid));
 
-    $db_date = strtotime($info['date']);
-    $scenedate = my_date("d.m.Y", $db_date);
+    list($year, $month, $day) = explode('-', $info['date']);
+    if ($month_setting == 0) {
+        $scenedate = $day.".".$month.".".$year;
+    } else {
+        $scenedate = $day.". ".$months[$month]." ".$year;
+    }
 
     $partners_username = $info['partners_username'];
     $partners = $info['partners'];
@@ -2249,7 +2628,11 @@ function inplayscenes_forumdisplay_thread() {
 
         $tagged_user = get_user($uid);
         if (!empty($tagged_user)) {
-            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            if ($color_setting == 1) {
+                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            } else {
+                $username = $tagged_user['username'];
+            }
             $taguser = build_profile_link($username, $uid);
         } else {
             $taguser = $usernames[$key];
@@ -2297,12 +2680,19 @@ function inplayscenes_forumdisplay_thread() {
         }
     }
 
-    if ($open_setting == 1) {
-        $openscene = $sceneoptions[$info['openscene']]." &#x26; ";
-        $inplayscene['openscene'] = $sceneoptions[$info['openscene']];
+    if ($scenetype_setting == 1) {
+        $scenetype = $sceneoptions[$info['scenetype']]." &#x26; ";
+        $inplayscene['scenetype'] = $sceneoptions[$info['scenetype']];
+    } else if ($hide_setting == 1) {
+        if (!empty($sceneoptions[$info['scenetype']])) {
+            $scenetype = $sceneoptions[$info['scenetype']]." &#x26; ";
+        } else {
+            $scenetype = "";
+        }
+        $inplayscene['scenetype'] = $sceneoptions[$info['scenetype']];
     } else {
-        $openscene = "";
-        $inplayscene['openscene'] = "";
+        $scenetype = "";
+        $inplayscene['scenetype'] = "";
     }
 
     if ($trigger_setting == 1) {
@@ -2325,6 +2715,138 @@ function inplayscenes_forumdisplay_thread() {
     eval("\$inplayscenes_forumdisplay = \"" . $templates->get("inplayscenes_forumdisplay") . "\";");
 }
 
+// FORUMDISPLAY KOMPLETT VERSTECKEN
+function inplayscenes_forumdisplay_before_thread(&$args) {
+
+    global $db, $mybb, $threadcount, $fid;
+
+    // EINSTELLUNGEN
+    $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
+    $inplay_archive = $mybb->settings['inplayscenes_archive'];
+    $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
+    $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+
+    // zurück, wenn verstecken nicht gegeben ist
+    if ($hide_setting != 1) return;
+    // zurück, wenn nicht komplett versteckt werden darf
+    if ($hidetype_setting == 0) return;
+
+    // zurück, wenn es nicht der Inplay Bereich ist
+    $inplayforums = $inplay_forum.",".$inplay_archive.",".$sideplays_forum.",".$sideplays_archive;
+    $relevant_forums = inplayscenes_get_relevant_forums($inplayforums);
+    if (!in_array($fid, $relevant_forums)) return;
+
+    // ModCP Berechtige (Team) können immer sehen 
+    if($mybb->usergroup['canmodcp'] == '1') return;
+
+    $threadcache = &$args['threadcache'];
+    $tids = &$args['tids'];
+    
+    $uid = $mybb->user['uid'];
+
+    $remove_tids = inplayscenes_hidescenes($uid, 'forumdisplay');
+
+    if (!empty($remove_tids)) {
+        foreach ($remove_tids as $remove_tid) {
+            // Entferne den Thread aus dem Cache
+            if (isset($threadcache[$remove_tid])) {
+                unset($threadcache[$remove_tid]);
+            }
+    
+            // Entferne die TID aus dem TID-Array
+            $key = array_search($remove_tid, $tids);
+            if ($key !== false) {
+                unset($tids[$key]);
+            }
+        }
+    
+        $threadcount = count($tids);
+    }
+}
+
+// FORUMBIT ANZEIGE - VERSTECKTE SZENEN
+function inplayscenes_build_forumbits_forum($forum) {
+
+    global $mybb, $db;
+
+    // EINSTELLUNGEN
+    $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
+    $inplay_archive = $mybb->settings['inplayscenes_archive'];
+    $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
+    $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+
+    // zurück, wenn verstecken nicht gegeben ist
+    if ($hide_setting != 1) return;
+    // zurück, wenn nicht komplett versteckt werden darf
+    if ($hidetype_setting == 0) return;
+
+    // zurück, wenn es nicht der Inplay Bereich ist
+    $inplayforums = $inplay_forum.",".$inplay_archive.",".$sideplays_forum.",".$sideplays_archive;
+    $relevant_forums = inplayscenes_get_relevant_forums($inplayforums);
+    if (!in_array($forum['fid'], $relevant_forums)) return;
+
+    // ModCP Berechtige (Team) können immer sehen 
+    if($mybb->usergroup['canmodcp'] == '1') return;
+
+    $uid = $mybb->user['uid'];
+    $remove_tids = inplayscenes_hidescenes($uid, 'forumdisplay');
+        
+    if (!empty($remove_tids)) {
+        
+        $remove_tids_list = implode(',', array_map('intval', $remove_tids)); 
+
+        // Themen und Antworten Counter bearbeiten
+        $query = $db->query("SELECT tid, replies FROM ".TABLE_PREFIX."threads
+        WHERE fid = ".intval($forum['fid'])."
+        AND tid IN (".$remove_tids_list.")
+        ");
+
+        $total_replies = 0;
+        $total_threads = 0;
+        while ($thread = $db->fetch_array($query)) {
+            $total_replies += $thread['replies'] + 1;
+            $total_threads += 1;
+        }
+
+        $forum['posts'] = max(0, $forum['posts'] - $total_replies);
+        $forum['threads'] = max(0, $forum['threads'] - $total_threads);
+
+        // Lastpost Informationen
+        if (in_array($forum['lastposttid'], $remove_tids)) {
+
+            $query = $db->query("
+                SELECT tid, lastpost, lastposter, lastposteruid, subject
+                FROM ".TABLE_PREFIX."threads
+                WHERE fid = ".intval($forum['fid'])."
+                AND tid NOT IN (".$remove_tids_list.")
+                ORDER BY lastpost DESC
+                LIMIT 1
+            ");
+
+            $last_valid_thread = $db->fetch_array($query);
+            if (!empty($last_valid_thread)) {
+                $forum['lastpost'] = $last_valid_thread['lastpost'];
+                $forum['lastpostsubject'] = $last_valid_thread['subject'];
+                $forum['lastposter'] = $last_valid_thread['lastposter'];
+                $forum['lastposttid'] = $last_valid_thread['tid'];
+                $forum['lastposteruid'] = $last_valid_thread['lastposteruid'];
+            } else {
+                $forum['lastpost'] = 0;
+                $forum['lastpostsubject'] = '';
+                $forum['lastposter'] = '';
+                $forum['lastposttid'] = 0;
+                $forum['lastposteruid'] = 0;
+            }
+        }
+    }
+
+    return $forum;
+}
+
 // POSTBIT
 function inplayscenes_postbit(&$post) {
 
@@ -2336,8 +2858,11 @@ function inplayscenes_postbit(&$post) {
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
     $information_setting_posts = $mybb->settings['inplayscenes_information_posts'];
+    $month_setting = $mybb->settings['inplayscenes_months'];
+    $color_setting = $mybb->settings['inplayscenes_groupcolor'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
     // Sprachdatei laden
     $lang->load('inplayscenes');
@@ -2349,7 +2874,7 @@ function inplayscenes_postbit(&$post) {
     $post['scenedate'] = '';
     $post['partnerusers'] = '';
     $post['postorder'] = '';
-    $post['openscene'] = '';
+    $post['scenetype'] = '';
     $post['trigger'] = '';
     $post['inplayscenes_pdf'] = '';
     $post['inplayscenes_postbit'] = '';
@@ -2384,19 +2909,43 @@ function inplayscenes_postbit(&$post) {
     // Zurück, wenn im Postbit nichts angezeigt werden soll
     if ($information_setting_posts == 0) return;
 
-    // Sprachdatei laden
-    $lang->load('inplayscenes');
-
     $postorderoptions = [
         '1' => $lang->inplayscenes_postorder_fixed,
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
+
+    $months = array(
+        '01' => $lang->inplayscenes_jan,
+        '02' => $lang->inplayscenes_feb,
+        '03' => $lang->inplayscenes_mar,
+        '04' => $lang->inplayscenes_apr,
+        '05' => $lang->inplayscenes_mai,
+        '06' => $lang->inplayscenes_jun,
+        '07' => $lang->inplayscenes_jul,
+        '08' => $lang->inplayscenes_aug,
+        '09' => $lang->inplayscenes_sep,
+        '10' => $lang->inplayscenes_okt,
+        '11' => $lang->inplayscenes_nov,
+        '12' => $lang->inplayscenes_dez
+    );
 
     // CSS Variable zum Verstecken
     $post['display_onlyinplay'] = "";
@@ -2407,7 +2956,7 @@ function inplayscenes_postbit(&$post) {
 
         $info['date'] = $mybb->get_input('date');
         $info['postorder'] = $mybb->get_input('postorder');
-        $info['openscene'] = $mybb->get_input('openscene');
+        $info['scenetype'] = $mybb->get_input('scenetype');
         $info['trigger_warning'] = $mybb->get_input('trigger');
 
         // SPEICHERN
@@ -2423,7 +2972,11 @@ function inplayscenes_postbit(&$post) {
                 $characters_uids = '';
             }
         }
-        $charactersUids = implode(",", $characters_uids);
+        if (!empty($characters_uids)) {
+            $charactersUids = implode(",", $characters_uids);
+        } else {
+            $charactersUids = '';
+        }
     
         // Man selbst muss man sich nicht eintragen
         $ownuid = $mybb->user['uid'];
@@ -2443,8 +2996,16 @@ function inplayscenes_postbit(&$post) {
         $info = $db->fetch_array($db->simple_select('inplayscenes', '*', 'tid = ' . $tid));
     }
 
-    $db_date = strtotime($info['date']);
-    $scenedate = my_date("d.m.Y", $db_date);
+    if (!empty($info['date'])) {
+        list($year, $month, $day) = explode('-', $info['date']);    
+        if ($month_setting == 0) {
+            $scenedate = $day.".".$month.".".$year;
+        } else {
+            $scenedate = $day.". ".$months[$month]." ".$year;
+        }
+    } else {
+        $scenedate = "";
+    }
 
     $partners_username = $info['partners_username'];
     $partners = $info['partners'];
@@ -2457,7 +3018,11 @@ function inplayscenes_postbit(&$post) {
 
         $tagged_user = get_user($uid);
         if (!empty($tagged_user)) {
-            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            if ($color_setting == 1) {
+                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            } else {
+                $username = $tagged_user['username'];
+            }
             $taguser = build_profile_link($username, $uid);
         } else {
             $taguser = $usernames[$key];
@@ -2505,12 +3070,17 @@ function inplayscenes_postbit(&$post) {
         }
     }
 
-    if ($open_setting == 1) {
-        $openscene = $sceneoptions[$info['openscene']]." &#x26; ";
-        $post['openscene'] = $sceneoptions[$info['openscene']];
+    if ($scenetype_setting == 1) {
+        if (!empty($info['scenetype'])) {
+            $scenetype = $sceneoptions[$info['scenetype']]." &#x26; ";
+            $post['scenetype'] = $sceneoptions[$info['scenetype']];
+        } else {
+            $scenetype = "";
+            $post['scenetype'] = "";
+        }
     } else {
-        $openscene = "";
-        $post['openscene'] = "";
+        $scenetype = "";
+        $post['scenetype'] = "";
     }
 
     if ($trigger_setting == 1) {
@@ -2546,7 +3116,7 @@ function inplayscenes_postvariables(&$post) {
     $post['scenedate'] = '';
     $post['partnerusers'] = '';
     $post['postorder'] = '';
-    $post['openscene'] = '';
+    $post['scenetype'] = '';
     $post['trigger'] = '';
     $post['inplayscenes_pdf'] = '';
     $post['inplayscenes_postbit'] = '';
@@ -2571,8 +3141,11 @@ function inplayscenes_showthread_start() {
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
     $information_setting_thread = $mybb->settings['inplayscenes_information_thread'];
+    $month_setting = $mybb->settings['inplayscenes_months'];
+    $color_setting = $mybb->settings['inplayscenes_groupcolor'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
     // CSS Variable zum Verstecken 
     $display_offplay = "";
@@ -2586,7 +3159,7 @@ function inplayscenes_showthread_start() {
         'scenedate' => '',
         'partnerusers' => '',
         'postorder' => '',
-        'openscene' => '',
+        'scenetype' => '',
         'trigger' => '',
     ];
 
@@ -2608,10 +3181,10 @@ function inplayscenes_showthread_start() {
     } else  {
         $inplayscenes_edit = "";
 
-        if ($open_setting == 1 AND $mybb->user['uid'] != 0) {
-            $openscene = $db->fetch_field($db->simple_select("inplayscenes", "openscene", "tid = '".$tid."'"), "openscene");
+        if ($scenetype_setting == 1 AND $mybb->user['uid'] != 0) {
+            $scenetype = $db->fetch_field($db->simple_select("inplayscenes", "scenetype", "tid = '".$tid."'"), "scenetype");
 
-            if ($openscene == 2) {
+            if ($scenetype == 2) {
                 eval("\$inplayscenes_add = \"" . $templates->get("inplayscenes_showthread_add") . "\";");
             } else {
                 $inplayscenes_add = "";
@@ -2627,8 +3200,7 @@ function inplayscenes_showthread_start() {
         $inplayscenes_pdf = "";
     }
 
-    // NICHT RELEVANT BUTTON
-    // zurück, wenn es nicht der Inplay Bereich ist
+    // NICHT RELEVANT BUTTON -> Nur archiv
     $archiveforums = $inplay_archive.",".$sideplays_archive;
     $relevant_archive = inplayscenes_get_relevant_forums($archiveforums);
     if (in_array($fid, $relevant_archive)) {
@@ -2650,7 +3222,15 @@ function inplayscenes_showthread_start() {
         $inplayscenes_relevant = "";
     }
 
-    // Zurück, wenn im Postbit nichts angezeigt werden soll
+    // Versteckt Error
+    if ($hide_setting == 1) {
+        $remove_tids = inplayscenes_hidescenes($mybb->user['uid']);
+        if (in_array($tid, $remove_tids) && $mybb->usergroup['canmodcp'] != '1') {
+            error_no_permission();
+        }
+    }
+
+    // Zurück, wenn im Showthread nichts angezeigt werden soll
     if ($information_setting_thread == 0) return;
 
     // Sprachdatei laden
@@ -2661,11 +3241,38 @@ function inplayscenes_showthread_start() {
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
+
+    $months = array(
+        '01' => $lang->inplayscenes_jan,
+        '02' => $lang->inplayscenes_feb,
+        '03' => $lang->inplayscenes_mar,
+        '04' => $lang->inplayscenes_apr,
+        '05' => $lang->inplayscenes_mai,
+        '06' => $lang->inplayscenes_jun,
+        '07' => $lang->inplayscenes_jul,
+        '08' => $lang->inplayscenes_aug,
+        '09' => $lang->inplayscenes_sep,
+        '10' => $lang->inplayscenes_okt,
+        '11' => $lang->inplayscenes_nov,
+        '12' => $lang->inplayscenes_dez
+    );
 
     // CSS Variable zum Verstecken
     $display_offplay = "style=\"display:none;\"";
@@ -2674,8 +3281,12 @@ function inplayscenes_showthread_start() {
     // Infos aus der DB ziehen
     $info = $db->fetch_array($db->simple_select('inplayscenes', '*', 'tid = ' . $tid));
 
-    $db_date = strtotime($info['date']);
-    $scenedate = my_date("d.m.Y", $db_date);
+    list($year, $month, $day) = explode('-', $info['date']);
+    if ($month_setting == 0) {
+        $scenedate = $day.".".$month.".".$year;
+    } else {
+        $scenedate = $day.". ".$months[$month]." ".$year;
+    }
 
     $partners_username = $info['partners_username'];
     $partners = $info['partners'];
@@ -2688,7 +3299,11 @@ function inplayscenes_showthread_start() {
 
         $tagged_user = get_user($uid);
         if (!empty($tagged_user)) {
-            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            if ($color_setting == 1) {
+                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            } else {
+                $username = $tagged_user['username'];
+            }
             $taguser = build_profile_link($username, $uid);
         } else {
             $taguser = $usernames[$key];
@@ -2737,12 +3352,19 @@ function inplayscenes_showthread_start() {
         }
     }
 
-    if ($open_setting == 1) {
-        $openscene = $sceneoptions[$info['openscene']]." &#x26; ";
-        $inplayscene['openscene'] = $sceneoptions[$info['openscene']];
+    if ($scenetype_setting == 1) {
+        $scenetype = $sceneoptions[$info['scenetype']]." &#x26; ";
+        $inplayscene['scenetype'] = $sceneoptions[$info['scenetype']];
+    } else if ($hide_setting == 1) {
+        if (!empty($sceneoptions[$info['scenetype']])) {
+            $scenetype = $sceneoptions[$info['scenetype']]." &#x26; ";
+        } else {
+            $scenetype = "";
+        }
+        $inplayscene['scenetype'] = $sceneoptions[$info['scenetype']];
     } else {
-        $openscene = "";
-        $inplayscene['openscene'] = "";
+        $scenetype = "";
+        $inplayscene['scenetype'] = "";
     }
 
     if ($trigger_setting == 1) {
@@ -2765,6 +3387,150 @@ function inplayscenes_showthread_start() {
     eval("\$inplayscenes_showthread = \"" . $templates->get("inplayscenes_showthread") . "\";");
 }
 
+// ERROR ANZEIGE - VERSTECKTE SZENEN
+function inplayscenes_no_permission() {
+
+	global $mybb, $theme, $templates, $db, $lang, $session, $errorpage;
+
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+
+    // zurück, wenn verstecken nicht gegeben ist
+    if ($hide_setting != 1) return;
+
+    if ($mybb->user['uid'] == 0) return;
+
+    $tid = $mybb->get_input('tid', MyBB::INPUT_INT);
+    $remove_tids = inplayscenes_hidescenes($mybb->user['uid']);
+    if (!in_array($tid, $remove_tids)) return;
+
+    $lang->error_nopermission_user_username = $lang->sprintf($lang->error_nopermission_user_username, htmlspecialchars_uni($mybb->user['username']));
+    
+    eval("\$errorpage = \"".$templates->get("inplayscenes_error_hidenscenes")."\";");
+
+	$noperm_array = array (
+		"nopermission" => '1',
+		"location1" => 0,
+		"location2" => 0
+	);
+
+	$db->update_query("sessions", $noperm_array, "sid='{$session->sid}'");
+
+	if($mybb->get_input('ajax', MyBB::INPUT_INT))
+	{
+		// Send our headers.
+		header("Content-type: application/json; charset={$lang->settings['charset']}");
+		echo json_encode(array("errors" => array($lang->error_nopermission_user_ajax)));
+		exit;
+	}
+
+	error($errorpage);
+    return;
+}
+
+// SUCHEERGEBNISSE - VERSTECKTE SZENEN
+function inplayscenes_search_process(){
+
+    global $mybb, $db, $searcharray, $remove_tids;
+
+    // Einstellungen
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+
+    // zurück, wenn verstecken nicht gegeben ist
+    if ($hide_setting != 1) return;
+    // zurück, wenn nicht komplett versteckt werden darf
+    if ($hidetype_setting == 0) return;
+
+    // ModCP Berechtige (Team) können immer sehen 
+    if($mybb->usergroup['canmodcp'] == '1') return;
+
+    $uid = $mybb->user['uid'];
+    $remove_tids = inplayscenes_hidescenes($uid, 'forumdisplay');
+
+    // Zusätzliche Query Bedingungen
+    if (!empty($remove_tids)) {
+
+         // Threads filtern
+        if($searcharray['resulttype'] == "threads") {
+            if (!empty($searcharray['querycache'])) {
+                $searcharray['querycache'] = $searcharray['querycache']." AND t.tid NOT IN (".implode(',', $remove_tids).")";
+            } else {
+                $searcharray['querycache'] = "t.tid NOT IN (".implode(',', $remove_tids).")";
+            }
+        }
+        // Posts filtern
+        else if ($searcharray['resulttype'] == "posts") {
+
+            $pids = explode(',', $searcharray['posts']);
+
+            $pid_query = $db->simple_select("posts","pid","tid IN (".implode(',',$remove_tids).")");
+            $remove_pids = [];
+            while ($post = $db->fetch_array($pid_query)) {
+                $remove_pids[] = $post['pid'];
+            }
+
+            $filtered_pids = array_diff($pids, $remove_pids);
+
+            $searcharray['posts'] = implode(',', $filtered_pids);
+        }
+    }
+}
+
+// SUCHERGEBNISSE - VERSTECKTE SZENEN HINWEIS
+function inplayscenes_search_results(){
+
+    global $mybb, $count_hidescenes, $lang;
+
+    // Einstellungen
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+
+    $count_hidescenes = "";
+
+    // zurück, wenn verstecken nicht gegeben ist
+    if ($hide_setting != 1) return;
+    // zurück, wenn nicht komplett versteckt werden darf
+    if ($hidetype_setting == 0) return;
+
+    // ModCP Berechtige (Team) können immer sehen 
+    if($mybb->usergroup['canmodcp'] == '1') return;
+
+    // Sprachdatei laden
+    $lang->load('inplayscenes');
+
+    $uid = $mybb->user['uid'];
+    $remove_tids = inplayscenes_hidescenes($uid, 'forumdisplay');
+
+    if (!empty($remove_tids)) {
+        $count_hidescenes = $lang->sprintf($lang->inplayscenes_hide_results, count($remove_tids));;
+    }
+}
+
+// SUCHERGEBNISSE - POSTVORSCHAU VON VERSTECKEN SZENEN ENTFERNEN
+function inplayscenes_search_results_post(){
+
+    global $mybb, $prev, $post, $lang;
+
+    // Einstellungen
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+
+    // zurück, wenn verstecken nicht gegeben ist
+    if ($hide_setting != 1) return;
+
+    // ModCP Berechtige (Team) können immer sehen 
+    if($mybb->usergroup['canmodcp'] == '1') return;
+
+    // Sprachdatei laden
+    $lang->load('inplayscenes');
+
+    $uid = $mybb->user['uid'];
+    $remove_tids = inplayscenes_hidescenes($uid);
+
+    if(in_array($post['tid'], $remove_tids)) {
+        $prev = $lang->inplayscenes_hide_prev;
+    }
+}
+
 // PROFIL
 function inplayscenes_memberprofile() {
 
@@ -2776,7 +3542,9 @@ function inplayscenes_memberprofile() {
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $color_setting = $mybb->settings['inplayscenes_groupcolor'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
 	// Sprachdatei laden
     $lang->load('inplayscenes');
@@ -2786,11 +3554,23 @@ function inplayscenes_memberprofile() {
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
 
     $inplayforums = $inplay_forum.",".$inplay_archive;
     $relevant_forums_inplay = inplayscenes_get_relevant_forums($inplayforums);
@@ -2823,17 +3603,32 @@ function inplayscenes_memberprofile() {
         $relevant_forums_archive_inplay = [0];
     }
 
+    if ($hide_setting == 1 && $mybb->usergroup['canmodcp'] != '1') {
+        $remove_tids = inplayscenes_hidescenes($mybb->user['uid'], 'profile');
+        if (!empty($remove_tids)) {
+            $remove_sql = "AND i.tid NOT IN (".implode(',', $remove_tids).")";
+        } else {
+            $remove_sql = "";
+        }
+    } else {
+        $remove_sql = "";
+    }
 
 	// Profil UID
 	$profileUID = $mybb->get_input('uid', MyBB::INPUT_INT);
 
     // Inplayszenen nach Jahren kategoriesiert
-    $allinplayscenesyear_query = $db->query("SELECT i.*, t.*, YEAR(i.date) AS year, MONTH(i.date) AS month FROM ".TABLE_PREFIX."inplayscenes i
+    $allinplayscenesyear_query = $db->query("SELECT i.*, t.*, 
+    YEAR(i.date) AS year, 
+    MONTH(i.date) AS month, 
+    DAY(i.date) AS day
+    FROM  ".TABLE_PREFIX."inplayscenes i
     LEFT JOIN ".TABLE_PREFIX."threads t 
     ON (i.tid = t.tid) 
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_inplay).")
     AND relevant != 0
+    ".$remove_sql."
     ORDER BY i.date DESC
     ");
 
@@ -2841,7 +3636,6 @@ function inplayscenes_memberprofile() {
     while($inplay = $db->fetch_array($allinplayscenesyear_query)) {
 
         // Leer laufen lassen
-        $db_date = "";
         $scenedate = "";
         $status = "";
         $partners_username = "";
@@ -2851,11 +3645,10 @@ function inplayscenes_memberprofile() {
         $partnerusers = "";
 
         // Mit Infos füllen
-        $year = $inplay['year'];
-        $month = $inplay['month'];  // Der Monat als Zahl (1-12)
+        $year = intval($inplay['year']);
+        $month = intval($inplay['month']); 
     
-        $db_date = strtotime($inplay['date']);
-        $scenedate = my_date("d.", $db_date);
+        $scenedate = intval($inplay['day']).".";
         $subject = $inplay['subject'];
         $tid = $inplay['tid'];
         $pid = $inplay['firstpost'];
@@ -2875,7 +3668,11 @@ function inplayscenes_memberprofile() {
         foreach ($uids as $key => $uid) {
             $tagged_user = get_user($uid);
             if (!empty($tagged_user)) {
-                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                if ($color_setting == 1) {
+                    $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                } else {
+                    $username = $tagged_user['username'];
+                }
                 $taguser = build_profile_link($username, $uid);
             } else {
                 $taguser = $usernames[$key];
@@ -2885,7 +3682,13 @@ function inplayscenes_memberprofile() {
         $partnerusers = implode(" &#x26; ", $partners);
 
         $postorder = $postorderoptions[$inplay['postorder']];
-        $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+        
+        $userids_array = array_keys(inplayscenes_get_allchars($mybb->user['uid']));
+        if ($inplay['hideprofile'] == 1 && empty(array_intersect($userids_array, $uids)) && $mybb->usergroup['canmodcp'] != '1') {
+            $scenelink = "";
+        } else {
+            $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+        }
 
         // Variable für einzeln
         $inplayscene = [];
@@ -2894,7 +3697,6 @@ function inplayscenes_memberprofile() {
         $inplayscene['postorder'] = $postorder;
     
         $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
-    
         while ($field = $db->fetch_array($fields_query)) {
     
             // Leer laufen lassen
@@ -2909,10 +3711,12 @@ function inplayscenes_memberprofile() {
             $inplayscene[$identification] = $value;
         }
 
-        if ($open_setting == 1) {
-            $inplayscene['openscene'] = $sceneoptions[$inplay['openscene']];
+        if ($scenetype_setting == 1) {
+            $inplayscene['scenetype'] = $sceneoptions[$inplay['scenetype']];
+        } else if ($hide_setting == 1) {
+            $inplayscene['scenetype'] = $sceneoptions[$inplay['scenetype']];
         } else {
-            $inplayscene['openscene'] = "";
+            $inplayscene['scenetype'] = "";
         }
 
         if ($trigger_setting == 1) {
@@ -2935,27 +3739,26 @@ function inplayscenes_memberprofile() {
     }
 
     $months = array(
-        '01' => 'Januar',
-        '02' => 'Februar',
-        '03' => 'März',
-        '04' => 'April',
-        '05' => 'Mai',
-        '06' => 'Juni',
-        '07' => 'Juli',
-        '08' => 'August',
-        '09' => 'September',
-        '10' => 'Oktober',
-        '11' => 'November',
-        '12' => 'Dezember'
+        '01' => $lang->inplayscenes_jan,
+        '02' => $lang->inplayscenes_feb,
+        '03' => $lang->inplayscenes_mar,
+        '04' => $lang->inplayscenes_apr,
+        '05' => $lang->inplayscenes_mai,
+        '06' => $lang->inplayscenes_jun,
+        '07' => $lang->inplayscenes_jul,
+        '08' => $lang->inplayscenes_aug,
+        '09' => $lang->inplayscenes_sep,
+        '10' => $lang->inplayscenes_okt,
+        '11' => $lang->inplayscenes_nov,
+        '12' => $lang->inplayscenes_dez
     );
 
     $allinplayscenes_year = '';
     foreach ($scenes_by_year_month as $year => $months_data) {
         $scenes_by_month = '';
         foreach ($months_data as $month => $scenes) {
-            // Den richtigen Monatsnamen aus dem Array abrufen
-            $month_str = str_pad($month, 2, '0', STR_PAD_LEFT); // Sicherstellen, dass der Monat immer zweistellig ist
-            $monthname = $months[$month_str];  // Monatsnamen aus dem Array holen
+            $month_str = str_pad($month, 2, '0', STR_PAD_LEFT);
+            $monthname = $months[$month_str];
         
             eval("\$scenes_by_month .= \"" . $templates->get("inplayscenes_memberprofile_month") . "\";");
         }
@@ -2971,6 +3774,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_inplay).")
     AND relevant != 0
+    ".$remove_sql."
     ORDER BY i.date DESC
     ");
 
@@ -2990,6 +3794,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_active_inplay).")
     AND relevant != 0
+    ".$remove_sql."
     ORDER BY i.date DESC
     ");
 
@@ -3009,6 +3814,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_archive_inplay).")
     AND relevant != 0
+    ".$remove_sql."
     ORDER BY i.date DESC
     ");
 
@@ -3027,6 +3833,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_sideplay).")
     AND relevant != 0
+    ".$remove_sql."
     ");
 
     $allsideplayscenes = "";
@@ -3043,6 +3850,7 @@ function inplayscenes_memberprofile() {
     ON (i.tid = t.tid) 
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND relevant != 1
+    ".$remove_sql."
     ");
 
     $allnotrelevantscenes = "";
@@ -3085,6 +3893,25 @@ function inplayscenes_misc() {
     // SPRACHDATEI
     $lang->load('inplayscenes');
 
+    $mybb->input['action'] = $mybb->get_input('action');
+
+    // EINSTELLUNGEN
+    $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
+    $inplay_archive = $mybb->settings['inplayscenes_archive'];
+    $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
+    $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
+    $trigger_setting = $mybb->settings['inplayscenes_trigger'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $allscene_setting = $mybb->settings['inplayscenes_allscene'];
+    $nextuser_setting = $mybb->settings['inplayscenes_nextuser'];
+    $playername_setting = $mybb->settings['inplayscenes_playername'];
+    $inactivescenes_setting = $mybb->settings['inplayscenes_inactive_scenes'];
+    $month_setting = $mybb->settings['inplayscenes_months'];
+    $color_setting = $mybb->settings['inplayscenes_groupcolor'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
+    $hideprofile_setting = $mybb->settings['inplayscenes_hideprofile'];
+
     require_once MYBB_ROOT."inc/class_parser.php";
             
     $parser = new postParser;
@@ -3103,25 +3930,38 @@ function inplayscenes_misc() {
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
 
-    $mybb->input['action'] = $mybb->get_input('action');
-
-    // EINSTELLUNGEN
-    $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
-    $inplay_archive = $mybb->settings['inplayscenes_archive'];
-    $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
-    $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
-    $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
-    $allscene_setting = $mybb->settings['inplayscenes_allscene'];
-    $nextuser_setting = $mybb->settings['inplayscenes_nextuser'];
-    $playername_setting = $mybb->settings['inplayscenes_playername'];
-    $inactivescenes_setting = $mybb->settings['inplayscenes_inactive_scenes'];
+    $months = array(
+        '01' => $lang->inplayscenes_jan,
+        '02' => $lang->inplayscenes_feb,
+        '03' => $lang->inplayscenes_mar,
+        '04' => $lang->inplayscenes_apr,
+        '05' => $lang->inplayscenes_mai,
+        '06' => $lang->inplayscenes_jun,
+        '07' => $lang->inplayscenes_jul,
+        '08' => $lang->inplayscenes_aug,
+        '09' => $lang->inplayscenes_sep,
+        '10' => $lang->inplayscenes_okt,
+        '11' => $lang->inplayscenes_nov,
+        '12' => $lang->inplayscenes_dez
+    );
 
     $allforums = $inplay_forum.",".$sideplays_forum.",".$inplay_archive.",".$sideplays_archive;
     $all_forums = inplayscenes_get_relevant_forums($allforums);
@@ -3213,8 +4053,12 @@ function inplayscenes_misc() {
                 $scene_all++;
                 $all_scenes_character++;
     
-                $db_date = strtotime($scene['date']);
-                $scenedate = my_date("d.m.Y", $db_date);
+                list($year, $month, $day) = explode('-', $scene['date']);
+                if ($month_setting == 0) {
+                    $scenedate = $day.".".$month.".".$year;
+                } else {
+                    $scenedate = $day.". ".$months[$month]." ".$year;
+                }
             
                 $partners_username = $scene['partners_username'];
                 $partners = $scene['partners'];
@@ -3227,8 +4071,12 @@ function inplayscenes_misc() {
             
                     $tagged_user = get_user($partneruid);
                     if (!empty($tagged_user)) {
-                        $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
-                        $taguser = build_profile_link($username, $uid);
+                        if ($color_setting == 1) {
+                            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                        } else {
+                            $username = $tagged_user['username'];
+                        }
+                        $taguser = build_profile_link($username, $partneruid);
                     } else {
                         $taguser = $partnerusernames[$key];
                     }
@@ -3284,12 +4132,12 @@ function inplayscenes_misc() {
                     }
                 }
             
-                if ($open_setting == 1) {
-                    $openscene = $sceneoptions[$scene['openscene']]." &#x26; ";
-                    $inplayscene['openscene'] = $sceneoptions[$scene['openscene']];
+                if ($scenetype_setting == 1) {
+                    $scenetype = $sceneoptions[$scene['scenetype']]." &#x26; ";
+                    $inplayscene['scenetype'] = $sceneoptions[$scene['scenetype']];
                 } else {
-                    $openscene = "";
-                    $inplayscene['openscene'] = "";
+                    $scenetype = "";
+                    $inplayscene['scenetype'] = "";
                 }
             
                 if ($trigger_setting == 1) {
@@ -3339,7 +4187,11 @@ function inplayscenes_misc() {
                     if ($nextuser_setting == 1) {
                         $isnext = $lang->inplayscenes_next;
                     } elseif ($nextuser_setting == 2) {
-                        $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextPlayername);
+                        if (!empty($nextPlayername)) {
+                            $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextPlayername);
+                        } else {
+                            $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextUsername);
+                        }
                     } else {
                         $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextUsername);
                     }
@@ -3347,8 +4199,13 @@ function inplayscenes_misc() {
     
                 $lastpostdate = my_date('relative', $scene['lastpost']);
                 $user = get_user($scene['lastposteruid']);
-                $lastposter = build_profile_link(format_name($user['username'], $user['usergroup'], $user['displaygroup']), $scene['lastposteruid']); 
-    
+                
+                if ($color_setting == 1) {
+                    $lastposter = build_profile_link(format_name($user['username'], $user['usergroup'], $user['displaygroup']), $scene['lastposteruid']); 
+                } else {
+                    $lastposter = build_profile_link($user['username'], $scene['lastposteruid']);
+                }
+
                 $lastpostlink = "showthread.php?tid=".$tid."&amp;action=lastpost";
                 $inplayscene['lastpostlink'] = $lastpostlink;
     
@@ -3461,34 +4318,36 @@ function inplayscenes_misc() {
             error_no_permission();
         }
 
-        add_breadcrumb("Alle Szenen", "misc.php?action=all_inplayscenes");
+        add_breadcrumb($lang->inplayscenes_overview, "misc.php?action=all_inplayscenes");
 
         // FILTER
         $where = []; 
         $charactername_placeholder = $lang->inplayscenes_search_character;
         $playername_placeholder = $lang->inplayscenes_search_player;
 
-        if ($open_setting == 1) {
-            if (!empty($mybb->get_input('scenesetting'))) {
-                $scenesetting = (int)$mybb->get_input('scenesetting');
+        if ($scenetype_setting == 1) {
+            if (!empty($mybb->get_input('scenetype'))) {
+                $scenetype = (int)$mybb->get_input('scenetype');
             } else {
-                $scenesetting = "0";
+                $scenetype = "0";
             }
-            $scenesetting_multipage = "&scenesetting=".$scenesetting;
+            $scenetype_multipage = "&scenetype=".$scenetype;
 
             // Szeneneinstellung-Filter
-            if ($scenesetting == '0') { // private Szene
-                $where[] = "i.openscene = 0";
-            } elseif ($scenesetting == '1') { // nach Absprache
-                $where[] = "i.openscene = 1";
-            } elseif ($scenesetting == '2') { // öffentliche Szene
-                $where[] = "i.openscene = 2";
+            if ($scenetype == '0') { // private Szene
+                $where[] = "i.scenetype = 0";
+            } elseif ($scenetype == '1') { // nach Absprache
+                $where[] = "i.scenetype = 1";
+            } elseif ($scenetype == '2') { // öffentliche Szene
+                $where[] = "i.scenetype = 2";
             }
 
-            eval("\$openscene_filter = \"".$templates->get("inplayscenes_overview_openscene_filter")."\";");
+            eval("\$scenetype_filter = \"".$templates->get("inplayscenes_overview_scenetype_filter")."\";");
+            $scenetype_input = "<input type=\"hidden\" name=\"scenetype\" value=\"".$scenetype."\">";
         } else {
-            $openscene_filter = "";
-            $scenesetting_multipage = "";
+            $scenetype_input = "";
+            $scenetype_filter = "";
+            $scenetype_multipage = "";
         }
 
         if (!empty($mybb->get_input('scenestatus'))) {
@@ -3620,6 +4479,21 @@ function inplayscenes_misc() {
         } else {
             $order_by_sql .= " ASC";
         }
+
+        if ($hide_setting == 1 && $mybb->usergroup['canmodcp'] != '1') {
+            $remove_tids = inplayscenes_hidescenes($mybb->user['uid'], 'forumdisplay');
+            if (!empty($remove_tids)) {
+                $remove_sql = "AND i.tid NOT IN (".implode(',', $remove_tids).")";
+
+                $hide_counter = $lang->sprintf($lang->inplayscenes_overview_counter_hide, count($remove_tids));
+            } else {
+                $remove_sql = "";
+                $hide_counter = "";
+            }
+        } else {
+            $remove_sql = "";
+            $hide_counter = "";
+        }
             
         // COUNTER
         $all_scenes = $db->num_rows($db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
@@ -3629,9 +4503,10 @@ function inplayscenes_misc() {
         $all_scenes_filter = $db->num_rows($db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
         LEFT JOIN ".TABLE_PREFIX."threads t ON (i.tid = t.tid) 
         ".$where_sql."
+        ".$remove_sql."
         "));
 
-        $scene_counter = $lang->sprintf($lang->inplayscenes_overview_counter, $all_scenes_filter, $all_scenes);
+        $scene_counter = $lang->sprintf($lang->inplayscenes_overview_counter, $all_scenes_filter, $all_scenes, $hide_counter);
     
         // MULTIPAGE
         $perpage = 20;
@@ -3656,7 +4531,7 @@ function inplayscenes_misc() {
         $charactername_multipage = "&charactername=".$charactername;
         $playername_multipage = "&playername=".$playername;
 
-        $page_url = htmlspecialchars_uni("misc.php?action=all_inplayscenes".$scenestatus_multipage.$area_multipage.$postorder_multipage.$scenesetting_multipage.$charactername_multipage.$playername_multipage);
+        $page_url = htmlspecialchars_uni("misc.php?action=all_inplayscenes".$scenestatus_multipage.$area_multipage.$postorder_multipage.$scenetype_multipage.$charactername_multipage.$playername_multipage);
 
         $multipage = multipage($all_scenes, $perpage, $input_page, $page_url);
         $multipage_sql = "LIMIT ".$start.", ".$perpage;
@@ -3664,6 +4539,7 @@ function inplayscenes_misc() {
         $scenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
         LEFT JOIN ".TABLE_PREFIX."threads t ON (i.tid = t.tid) 
         ".$where_sql."
+        ".$remove_sql."
         ".$order_by_sql."
         ".$multipage_sql."
         ");
@@ -3671,8 +4547,12 @@ function inplayscenes_misc() {
         $scenes_bit = "";
         while($scene = $db->fetch_array($scenes_query)) {
     
-            $db_date = strtotime($scene['date']);
-            $scenedate = my_date("d.m.Y", $db_date);
+            list($year, $month, $day) = explode('-', $scene['date']);
+            if ($month_setting == 0) {
+                $scenedate = $day.".".$month.".".$year;
+            } else {
+                $scenedate = $day.". ".$months[$month]." ".$year;
+            }
         
             $partners_username = $scene['partners_username'];
             $partners = $scene['partners'];
@@ -3685,7 +4565,11 @@ function inplayscenes_misc() {
         
                 $tagged_user = get_user($partneruid);
                 if (!empty($tagged_user)) {
-                    $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                    if ($color_setting == 1) {
+                        $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                    } else {
+                        $username = $tagged_user['username'];
+                    }
                     $taguser = build_profile_link($username, $partneruid);
                 } else {
                     $taguser = $partnerusernames[$key];
@@ -3698,7 +4582,13 @@ function inplayscenes_misc() {
             $subject = $scene['subject'];
             $tid = $scene['tid'];
             $pid = $scene['firstpost'];
-            $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+
+            $userids_array = array_keys(inplayscenes_get_allchars($mybb->user['uid']));
+            if ($scene['hideprofile'] == 1 && empty(array_intersect($userids_array, $partneruids)) && $mybb->usergroup['canmodcp'] != '1') {
+                $scenelink = "";
+            } else {
+                $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+            }
         
             // Variable für einzeln
             $inplayscene = [];
@@ -3708,7 +4598,6 @@ function inplayscenes_misc() {
             $inplayscene['subject'] = $subject;
             $inplayscene['tid'] = $tid;
             $inplayscene['pid'] = $pid;
-            $inplayscene['scenelink'] = $scenelink;
         
             $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
         
@@ -3742,12 +4631,14 @@ function inplayscenes_misc() {
                 }
             }
         
-            if ($open_setting == 1) {
-                $openscene = $sceneoptions[$scene['openscene']]."<br>";
-                $inplayscene['openscene'] = $sceneoptions[$scene['openscene']];
+            if ($scenetype_setting == 1) {
+                $scenetype = $sceneoptions[$scene['scenetype']]."<br>";
+                $inplayscene['scenetype'] = $sceneoptions[$scene['scenetype']];
+            } else if ($hide_setting == 1) {
+                $scenetype = $sceneoptions[$scene['scenetype']]."<br>";
+                $inplayscene['scenetype'] = $sceneoptions[$scene['scenetype']];
             } else {
-                $openscene = "";
-                $inplayscene['openscene'] = "";
+                $inplayscene['scenetype'] = "";
             }
         
             if ($trigger_setting == 1) {
@@ -3767,10 +4658,12 @@ function inplayscenes_misc() {
             }
     
             $lastpostdate = my_date('relative', $scene['lastpost']);
-            $lastposter = build_profile_link($scene['lastposter'], $scene['lastposteruid']);
-            $user = get_user($scene['lastposteruid']);
-            $lastposter_color = build_profile_link(format_name($user['username'], $user['usergroup'], $user['displaygroup']), $scene['lastposteruid']); 
-
+            if ($color_setting == 1) {
+                $user = get_user($scene['lastposteruid']);
+                $lastposter = build_profile_link(format_name($user['username'], $user['usergroup'], $user['displaygroup']), $scene['lastposteruid']); 
+            } else {
+                $lastposter = build_profile_link($user['username'], $scene['lastposteruid']);
+            }
             $lastpostlink = "showthread.php?tid=".$tid."&amp;action=lastpost";
             $inplayscene['lastpostlink'] = $lastpostlink;
 
@@ -3845,14 +4738,22 @@ function inplayscenes_misc() {
                 }
             }
             $charactersUids = implode(",", $characters_uids);
+
+            // Nullen Abfangen für Jahre vor 1000
+            $dateInput = $mybb->get_input('date');
+            list($year, $month, $day) = explode('-', $dateInput);
+            $year = intval($year);
+            $formattedDate = $year.'-'. $month.'-'.$day;
         
             $update_scene = array(
                 'partners' => $charactersUids,
                 'partners_username' => $db->escape_string($mybb->get_input('characters')),
-                'date' => $db->escape_string($mybb->get_input('date')),
+                'date' => $db->escape_string($formattedDate),
                 'trigger_warning' => $db->escape_string($mybb->get_input('trigger')),
-                'openscene' => (int)$mybb->get_input('openscene'),
-                'postorder' => (int)$mybb->get_input('postorder'),
+                'scenetype' => (int)$mybb->get_input('scenetype'),
+                'hidetype' => (int)$mybb->get_input('hidetype'),
+                'hideprofile' => (int)$mybb->get_input('hideprofile'),
+                'postorder' => (int)$mybb->get_input('postorder')
             );
         
             // Abfrage der individuellen Felder
@@ -3897,13 +4798,18 @@ function inplayscenes_misc() {
 
             // Infos aus der DB ziehen
             $draft = $db->fetch_array($db->simple_select('inplayscenes', '*', 'tid = '.$tid));
+
+            list($year, $month, $day) = explode('-', $draft['date']);
+            $draft['date'] = sprintf('%04d-%02d-%02d', $year, $month, $day); 
         } else {
             $draft = array(
                 'partners_username' => $db->escape_string($mybb->get_input('characters')),
                 'date' => $db->escape_string($mybb->get_input('date')),
                 'trigger_warning' => $db->escape_string($mybb->get_input('trigger')),
-                'openscene' => (int)$mybb->get_input('openscene'),
-                'postorder' => (int)$mybb->get_input('postorder'),
+                'scenetype' => (int)$mybb->get_input('scenetype'),
+                'hidetype' => (int)$mybb->get_input('hidetype'),
+                'hideprofile' => (int)$mybb->get_input('hideprofile'),
+                'postorder' => (int)$mybb->get_input('postorder')
             );
         
             // Abfrage der individuellen Felder
@@ -3922,7 +4828,6 @@ function inplayscenes_misc() {
             
                 $draft[$identification] = $db->escape_string($value);
             }
-
         }
     
         $partners_username = explode(",", $draft['partners_username']);
@@ -3936,16 +4841,47 @@ function inplayscenes_misc() {
         $date = $draft['date'];
 
         $triggerwarning = $draft['trigger_warning'];
-        $openscene_value = $draft['openscene'];
+        $scenetype_value = $draft['scenetype'];
+        $hidetype_value = $draft['hidetype'];
+        $hideprofile_value = $draft['hideprofile'];
 
         $own_inplayscenesfields = inplayscenes_generate_fields($draft, null, true, 'editscene');
 
         $postorder_select = inplayscenes_generate_postorder_select($postorder_value);
     
-        if ($open_setting == 1) {
-            $openscene_select = inplayscenes_generate_openscene_select($openscene_value);
+        if ($scenetype_setting == 1 || $hide_setting == 1) {
+            $scenetype_select = inplayscenes_generate_scenetype_select($scenetype_value);
         } else {
-            $openscene_select = "";
+            $scenetype_select = "";
+        }
+
+        if ($hide_setting == 1) {
+            if ($hidetype_setting == 2) {
+                $hidetype_select = inplayscenes_generate_hidetype_select($hidetype_value);
+            } else {
+                if ($hidetype_setting == 0) {
+                    $hidetype_select = $lang->inplayscenes_fields_hidetype_info;
+                } else {
+                    $hidetype_select = $lang->inplayscenes_fields_hidetype_all;
+                }
+            }
+            if ($hideprofile_setting == 2) {
+                $hideprofile_select = inplayscenes_generate_hideprofile_select($hideprofile_value);
+            } else {
+                if ($hideprofile_setting == 0) {
+                    $hideprofile_select = $lang->inplayscenes_fields_hideprofile_info;
+                } else {
+                    $hideprofile_select = $lang->inplayscenes_fields_hideprofile_all;
+                }
+            }
+            if ($hidetype_setting == 2 && $hideprofile_setting == 2) {
+                $inplayscenes_fields_hide_desc = $lang->inplayscenes_fields_hide_desc;
+            } else {
+                $inplayscenes_fields_hide_desc = $lang->inplayscenes_fields_hide_team;
+            }
+        } else {
+            $hidetype_select = "";
+            $hideprofile_select = "";
         }
     
         if ($trigger_setting == 1) { 
@@ -3966,7 +4902,7 @@ function inplayscenes_misc() {
     // OFFENE SZENE HINZUFÜGEN
     if($mybb->input['action'] == "add_openscenes"){
 
-        if ($open_setting == 0) {
+        if ($scenetype_setting == 0) {
             redirect("showthread.php?tid=".$tid, $lang->inplayscenes_redirect_deactive);
         }
 
@@ -3995,6 +4931,13 @@ function inplayscenes_misc() {
         $ownip = $db->fetch_field($db->query("SELECT ip FROM ".TABLE_PREFIX."sessions WHERE uid = '".$mybb->user['uid']."'"), "ip");
 
         $thread = get_thread($tid);
+
+        $playername_setting = $mybb->settings['inplayscenes_playername'];
+        if (is_numeric($playername_setting)) {
+            $playername_fid = "fid".$playername_setting;
+        } else {
+            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        }
         // MyAlerts möglich
         if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
     
@@ -4020,10 +4963,22 @@ function inplayscenes_misc() {
                         }
                     }
 
-                } else { // PN
+                } else { // PN                    
+                    if (is_numeric($playername_setting)) {
+                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    } else {
+                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
+                    if (!empty($playername)) {
+                        $Playername = $playername;
+                    } else {
+                        $Playername = get_user($CharaUid)['username'];
+                    }
+
+                    $pm_message = $lang->sprintf($lang->inplayscenes_pm_openadd_message, $Playername, $mybb->user['username'], 'showthread.php?tid='.$tid.'&pid='.$thread['firstpost'].'#pid'.$thread['firstpost'], $thread['subject']);
                     $pm_change = array(
                         "subject" => $lang->inplayscenes_pm_openadd_subject,
-                        "message" => $parser->parse_message($lang->inplayscenes_pm_openadd_message, $parser_array),
+                        "message" => $parser->parse_message($pm_message, $parser_array),
                         "fromid" => $mybb->user['uid'], // von wem kommt diese
                         "toid" => $CharaUid, // an wen geht diese
                         "icon" => "0",
@@ -4050,10 +5005,22 @@ function inplayscenes_misc() {
         } else { // PN ausschließlich
 
             // Jedem Partner
-            foreach ($characters_uids as $CharaUid) {
+            foreach ($characters_uids as $CharaUid) {              
+                if (is_numeric($playername_setting)) {
+                    $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                } else {
+                    $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                }
+                if (!empty($playername)) {
+                    $Playername = $playername;
+                } else {
+                    $Playername = get_user($CharaUid)['username'];
+                }
+
+                $pm_message = $lang->sprintf($lang->inplayscenes_pm_openadd_message, $Playername, $mybb->user['username'], 'showthread.php?tid='.$tid.'&pid='.$thread['firstpost'].'#pid'.$thread['firstpost'], $thread['subject']);
                 $pm_change = array(
                     "subject" => $lang->inplayscenes_pm_openadd_subject,
-                    "message" => $parser->parse_message($lang->inplayscenes_pm_openadd_message, $parser_array),
+                    "message" => $parser->parse_message($pm_message, $parser_array),
                     "fromid" => $mybb->user['uid'], // von wem kommt diese
                     "toid" => $CharaUid, // an wen geht diese
                     "icon" => "0",
@@ -4079,7 +5046,7 @@ function inplayscenes_misc() {
         }
         
         $db->update_query("inplayscenes", $update_partner, "tid='".$tid."'");
-        redirect("showthread.php?tid=".$tid, $lang->nplayscenes_redirect_open_add);
+        redirect("showthread.php?tid=".$tid, $lang->inplayscenes_redirect_open_add);
     }
 
     // SZENE ALS UNRELAVANT EINSTUFEN
@@ -4299,9 +5266,13 @@ function inplayscenes_misc() {
 
                 $scene_rows = '';
                 foreach ($scenes as $scene) {
-
-                    $db_date = strtotime($scene['date']);
-                    $scenedate = my_date("d.m.Y", $db_date);
+    
+                    list($year, $month, $day) = explode('-', $scene['date']);
+                    if ($month_setting == 0) {
+                        $scenedate = $day.".".$month.".".$year;
+                    } else {
+                        $scenedate = $day.". ".$months[$month]." ".$year;
+                    }
                 
                     $partners_username = $scene['partners_username'];
                     $partners = $scene['partners'];
@@ -4314,7 +5285,11 @@ function inplayscenes_misc() {
                 
                         $tagged_user = get_user($uid);
                         if (!empty($tagged_user)) {
-                            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                            if ($color_setting == 1) {
+                                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+                            } else {
+                                $username = $tagged_user['username'];
+                            }
                             $taguser = build_profile_link($username, $uid);
                         } else {
                             $taguser = $usernames[$key];
@@ -4371,12 +5346,12 @@ function inplayscenes_misc() {
                         }
                     }
                 
-                    if ($open_setting == 1) {
-                        $openscene = $sceneoptions[$scene['openscene']]." &#x26; ";
-                        $inplayscene['openscene'] = $sceneoptions[$scene['openscene']];
+                    if ($scenetype_setting == 1) {
+                        $scenetype = $sceneoptions[$scene['scenetype']]." &#x26; ";
+                        $inplayscene['scenetype'] = $sceneoptions[$scene['scenetype']];
                     } else {
-                        $openscene = "";
-                        $inplayscene['openscene'] = "";
+                        $scenetype = "";
+                        $inplayscene['scenetype'] = "";
                     }
                 
                     if ($trigger_setting == 1) {
@@ -4396,9 +5371,13 @@ function inplayscenes_misc() {
                     }
     
                     $lastpostdate = my_date('relative', $scene['lastpost']);
-                    $user = get_user($scene['lastposteruid']);
-                    $lastposter = build_profile_link(format_name($user['username'], $user['usergroup'], $user['displaygroup']), $scene['lastposteruid']); 
-        
+                    if ($color_setting == 1) {
+                        $user = get_user($scene['lastposteruid']);
+                        $lastposter = build_profile_link(format_name($user['username'], $user['usergroup'], $user['displaygroup']), $scene['lastposteruid']); 
+                    } else {
+                        $lastposter = build_profile_link($user['username'], $scene['lastposteruid']);
+                    }
+
                     $lastpostlink = "showthread.php?tid=".$tid."&amp;action=lastpost";
                     $inplayscene['lastpostlink'] = $lastpostlink;
 
@@ -4524,15 +5503,13 @@ function inplayscenes_user_delete() {
 
     while($ilist = $db->fetch_array($allinplay_query)) {
 
-        $date = $ilist['date']; 
-        $year = date('Y', strtotime($date));
-        $month_number = date('m', strtotime($date));
+        list($year, $month_number, $day) = explode('-', $ilist['date']);
 
         $possible_month_names = $months[$month_number];
 
         $subforum_fid = false;
         foreach ($possible_month_names as $month_name) {
-            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid IN (".$inplay_archive.")"), 'fid');
+            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid = ".$inplay_archive.""), 'fid');
             if ($subforum_fid) {
                 break;
             }
@@ -4564,15 +5541,13 @@ function inplayscenes_user_delete() {
 
     while($slist = $db->fetch_array($allsideplay_query)) {
 
-        $date = $slist['date'];
-        $year = date('Y', strtotime($date));
-        $month_number = date('m', strtotime($date));
+        list($year, $month_number, $day) = explode('-', $slist['date']);
 
         $possible_month_names = $months[$month_number];
 
         $subforum_fid = false;
         foreach ($possible_month_names as $month_name) {
-            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid IN (".$inplay_archive.")"), 'fid');
+            $subforum_fid = $db->fetch_field($db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid = ".$sideplays_archive.""), 'fid');
             if ($subforum_fid) {
                 break; 
             }
@@ -4739,10 +5714,13 @@ function inplayscenes_online_activity($user_activity) {
 }
 function inplayscenes_online_location($plugin_array) {
 
-	global $lang, $db;
+	global $lang, $db, $mybb;
     
     // SPRACHDATEI LADEN
     $lang->load("inplayscenes");
+
+    // Einstellungen
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
     // Seitennamen
     $split_name = explode("=", $plugin_array['user_activity']['activity']);
@@ -4777,6 +5755,20 @@ function inplayscenes_online_location($plugin_array) {
     if ($sidename == "postingreminder") {
 		$plugin_array['location_name'] = $lang->inplayscenes_online_location_postingreminder;
 	}
+
+    if ($hide_setting == 1) {
+
+        $uid = $mybb->user['uid'];
+        $remove_tids = inplayscenes_hidescenes($uid, 'forumdisplay');
+
+        if (!empty($remove_tids) AND $mybb->usergroup['canmodcp'] != '1') {
+            if ($plugin_array['user_activity']['activity'] == "showthread") {
+                if(in_array($plugin_array['user_activity']['tid'], $remove_tids)) {
+                    $plugin_array['location_name'] = "Liest eine versteckte Inplayszene.";
+                } 
+            }
+        }
+    }
 
 	return $plugin_array;
 }
@@ -5130,8 +6122,49 @@ function inplayscenes_generate_postorder_select($selected_value) {
         '0' => $lang->inplayscenes_postorder_none
     ];    
     
-    // Start des Select-Tags
     $select = '<select name="postorder">';
+
+    foreach ($options as $value => $label) {
+        $selected = ($value == $selected_value) ? ' selected' : '';
+        $select .= '<option value="' . htmlspecialchars($value) . '"' . $selected . '>' . htmlspecialchars($label) . '</option>';
+    }
+
+    $select .= '</select>';
+
+    return $select;
+}
+
+// SZENENSTATUS SELECT GENERIEN
+function inplayscenes_generate_scenetype_select($selected_value) {
+
+	global $lang, $mybb;
+
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+
+	$lang->load('inplayscenes');
+
+    // Optionen für das Dropdown-Menü
+    if ($scenetype_setting == 1) {
+        $options = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($options, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $options = [
+                '0' => $lang->inplayscenes_scenetype_visible,
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
+
+    // Start des Select-Tags
+    $select = '<select name="scenetype">';
 
     // Optionen durchlaufen und die entsprechende als ausgewählt markieren
     foreach ($options as $value => $label) {
@@ -5145,8 +6178,8 @@ function inplayscenes_generate_postorder_select($selected_value) {
     return $select;
 }
 
-// OFFENE SZENEN SELECT GENERIEN
-function inplayscenes_generate_openscene_select($selected_value) {
+// GEHEIME SZENEN EINSTELLUNGEN SELECT GENERIEN
+function inplayscenes_generate_hidetype_select($selected_value) {
 
 	global $lang;
 
@@ -5154,21 +6187,42 @@ function inplayscenes_generate_openscene_select($selected_value) {
 
     // Optionen für das Dropdown-Menü
     $options = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+        '1' => $lang->inplayscenes_hidetype_info,
+        '2' => $lang->inplayscenes_hidetype_all
+    ];    
+    
+    $select = '<select name="hidetype">';
 
-    // Start des Select-Tags
-    $select = '<select name="openscene">';
-
-    // Optionen durchlaufen und die entsprechende als ausgewählt markieren
     foreach ($options as $value => $label) {
         $selected = ($value == $selected_value) ? ' selected' : '';
         $select .= '<option value="' . htmlspecialchars($value) . '"' . $selected . '>' . htmlspecialchars($label) . '</option>';
     }
 
-    // Ende des Select-Tags
+    $select .= '</select>';
+
+    return $select;
+}
+
+// GEHEIME SZENEN PROFIL EINSTELLUNGEN SELECT GENERIEN
+function inplayscenes_generate_hideprofile_select($selected_value) {
+
+	global $lang;
+
+	$lang->load('inplayscenes');
+
+    // Optionen für das Dropdown-Menü
+    $options = [
+        '1' => $lang->inplayscenes_hideprofile_info,
+        '2' => $lang->inplayscenes_hideprofile_all
+    ];    
+    
+    $select = '<select name="hideprofile">';
+
+    foreach ($options as $value => $label) {
+        $selected = ($value == $selected_value) ? ' selected' : '';
+        $select .= '<option value="' . htmlspecialchars($value) . '"' . $selected . '>' . htmlspecialchars($label) . '</option>';
+    }
+
     $select .= '</select>';
 
     return $select;
@@ -5318,7 +6372,11 @@ function inplayscenes_playername_autocompled(){
 // PDF FELDER
 function inplayscenes_pdf_fields($scenetid) {
 
-    global $db, $lang, $templates, $inplaysceneinfo;
+    global $db, $mybb, $lang, $templates, $inplaysceneinfo;
+
+    // EINSTELLUNGEN
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
     // SPRACHDATEI
     $lang->load('inplayscenes');
@@ -5328,11 +6386,23 @@ function inplayscenes_pdf_fields($scenetid) {
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
             
     $inplaysceneinfo = "";
 
@@ -5357,10 +6427,11 @@ function inplayscenes_pdf_fields($scenetid) {
     }
     $partnerusers = implode(" &#x26; ", $partners);
 
-    $inplayscene['scenedate'] = my_date("d.m.Y", strtotime($inplayscene['date']));
+    list($year, $month, $day) = explode('-', $inplayscene['date']);
+    $inplayscene['scenedate'] = $day.".".$month.".".$year;
     $inplayscene['partnerusers'] = $partnerusers;
     $inplayscene['postorder'] = $postorderoptions[$inplayscene['postorder']];
-    $inplayscene['openscene'] = $postorderoptions[$sceneoptions['openscene']];
+    $inplayscene['scenetype'] = $postorderoptions[$sceneoptions['scenetype']];
 
     $fields_query = $db->query("SELECT * FROM " . TABLE_PREFIX . "inplayscenes_fields ORDER BY disporder ASC, title ASC");
     while ($field = $db->fetch_array($fields_query)) {
@@ -5540,7 +6611,10 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
 
     // EINSTELLUNGEN
     $trigger_setting = $mybb->settings['inplayscenes_trigger'];
-    $open_setting = $mybb->settings['inplayscenes_open'];
+    $scenetype_setting = $mybb->settings['inplayscenes_scenetype'];
+    $month_setting = $mybb->settings['inplayscenes_months'];
+    $color_setting = $mybb->settings['inplayscenes_groupcolor'];
+    $hide_setting = $mybb->settings['inplayscenes_hide'];
 
 	// Sprachdatei laden
     $lang->load('inplayscenes');
@@ -5550,11 +6624,38 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
         '0' => $lang->inplayscenes_postorder_none
     ];
 
-    $sceneoptions = [
-        '0' => $lang->inplayscenes_openscene_private,
-        '1' => $lang->inplayscenes_openscene_agreed,
-        '2' => $lang->inplayscenes_openscene_open
-    ];
+    if ($scenetype_setting == 1) {
+        $sceneoptions = [
+            '0' => $lang->inplayscenes_scenetype_private,
+            '1' => $lang->inplayscenes_scenetype_agreed,
+            '2' => $lang->inplayscenes_scenetype_open
+        ];
+        if ($hide_setting == 1) {
+            array_push($sceneoptions, $lang->inplayscenes_scenetype_hide);
+        }
+    } else {
+        if ($hide_setting == 1) {
+            $sceneoptions = [
+                '0' => '',
+                '3' => $lang->inplayscenes_scenetype_hide
+            ];
+        }
+    }
+
+    $months = array(
+        '01' => $lang->inplayscenes_jan,
+        '02' => $lang->inplayscenes_feb,
+        '03' => $lang->inplayscenes_mar,
+        '04' => $lang->inplayscenes_apr,
+        '05' => $lang->inplayscenes_mai,
+        '06' => $lang->inplayscenes_jun,
+        '07' => $lang->inplayscenes_jul,
+        '08' => $lang->inplayscenes_aug,
+        '09' => $lang->inplayscenes_sep,
+        '10' => $lang->inplayscenes_okt,
+        '11' => $lang->inplayscenes_nov,
+        '12' => $lang->inplayscenes_dez
+    );
 
     // Leer laufen lassen
     $db_date = "";
@@ -5571,8 +6672,12 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
     $scenelink = "";
 
     // Mit Infos füllen
-    $db_date = strtotime($scene['date']);
-    $scenedate = my_date("d.m.Y", $db_date);
+    list($year, $month, $day) = explode('-', $scene['date']);
+    if ($month_setting == 0) {
+        $scenedate = $day.".".$month.".".$year;
+    } else {
+        $scenedate = $day.". ".$months[$month]." ".$year;
+    }
 
     $partners_username = $scene['partners_username'];
     $partners = $scene['partners'];
@@ -5585,7 +6690,11 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
 
         $tagged_user = get_user($uid);
         if (!empty($tagged_user)) {
-            $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            if ($color_setting == 1) {
+                $username = format_name($tagged_user['username'], $tagged_user['usergroup'], $tagged_user['displaygroup']);
+            } else {
+                $username = $tagged_user['username'];
+            }
             $taguser = build_profile_link($username, $uid);
         } else {
             $taguser = $usernames[$key];
@@ -5598,7 +6707,13 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
     $subject = $scene['subject'];
     $tid = $scene['tid'];
     $pid = $scene['firstpost'];
-    $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+
+    $userids_array = array_keys(inplayscenes_get_allchars($mybb->user['uid']));
+    if ($scene['hideprofile'] == 1 && empty(array_intersect($userids_array, $uids)) && $mybb->usergroup['canmodcp'] != '1') {
+        $scenelink = "";
+    } else {
+        $scenelink = "showthread.php?tid=".$tid."&pid=".$pid."#pid".$pid;
+    }
 
     // Variable für einzeln
     $inplayscene = [];
@@ -5622,10 +6737,12 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
         $inplayscene[$identification] = $value;
     }
 
-    if ($open_setting == 1) {
-        $inplayscene['openscene'] = $sceneoptions[$scene['openscene']];
+    if ($scenetype_setting == 1) {
+        $inplayscene['scenetype'] = $sceneoptions[$scene['scenetype']];
+    } else if ($hide_setting == 1) {
+        $inplayscene['scenetype'] = $sceneoptions[$scene['scenetype']];
     } else {
-        $inplayscene['openscene'] = "";
+        $inplayscene['scenetype'] = "";
     }
 
     if ($trigger_setting == 1) {
@@ -5649,6 +6766,49 @@ function inplayscenes_profile_scene($scene, $archive_forums, $mode = '') {
     return $result;
 }
 
+// VERSTECKTE SZENEN
+function inplayscenes_hidescenes($uid, $mode = '') {
+
+    global $db;
+
+    if ($uid != 0) {
+        // ACCOUNTSWITCHER
+        $userids_array = inplayscenes_get_allchars($uid);
+        $uids_to_check = array_keys($userids_array);
+    
+        $find_in_set_conditions = array();
+        foreach ($uids_to_check as $uid_to_check) {
+            $find_in_set_conditions[] = "NOT (concat(',',partners,',') LIKE '%,".$uid_to_check.",%')";
+        }
+        $find_in_set_sql = implode(' AND ', $find_in_set_conditions);
+
+        $user_sql = "AND NOT (concat(',',partners,',') LIKE '%,".$uid.",%') AND ".$find_in_set_sql."";
+    } else {
+        $user_sql = "";
+    }
+
+    if ($mode == 'forumdisplay') {
+        $type_sql = "AND hidetype = 2";
+    } else if ($mode == 'profile') {
+        $type_sql = "AND hideprofile = 2";
+    } else {
+        $type_sql = "";
+    }
+
+    $remove_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes 
+    WHERE scenetype = 3
+    ".$type_sql."
+    ".$user_sql."
+    ");
+
+    $remove_tids = array();
+    while ($remove = $db->fetch_array($remove_query)) {
+        $remove_tids[] = $remove['tid'];
+    }
+
+    return $remove_tids;
+}
+
 // DATENBANKTABELLEN + DATENBANKFELDER
 function inplayscenes_database() {
 
@@ -5662,9 +6822,11 @@ function inplayscenes_database() {
             `tid` int(11) unsigned,
             `partners` VARCHAR(1500),
             `partners_username` VARCHAR(2500),
-            `date` date,
+            `date` VARCHAR(12) NOT NULL DEFAULT '0000-00-00',
             `trigger_warning` VARCHAR(500),
-            `openscene` int(1) unsigned NOT NULL DEFAULT '0',
+            `scenetype` int(1) unsigned NOT NULL DEFAULT '0',
+            `hidetype` int(1) unsigned NOT NULL DEFAULT '0',
+            `hideprofile` int(1) unsigned NOT NULL DEFAULT '0',
             `postorder` int(1) unsigned NOT NULL DEFAULT '1',
             `relevant` int(1) unsigned NOT NULL DEFAULT '1',
             PRIMARY KEY(`isid`),
@@ -5675,7 +6837,6 @@ function inplayscenes_database() {
     }
     // Inplayszenen Felder
     if (!$db->table_exists("inplayscenes_fields")) {
-
         $db->query("CREATE TABLE ".TABLE_PREFIX."inplayscenes_fields (
             `ifid` int(10) NOT NULL AUTO_INCREMENT, 
             `identification` VARCHAR(250) NOT NULL,
@@ -5695,27 +6856,36 @@ function inplayscenes_database() {
             )
             ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
         ");
-
     }
 
     // DATENBANKSPALTEN => USERS
     // Benachrichtigungssystem
     if (!$db->field_exists("inplayscenes_notification", "users")) {
         if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
-            $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '1';");
+            $db->query("ALTER TABLE ".TABLE_PREFIX."users ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '1';");
         } else {
-            $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '0';");
+            $db->query("ALTER TABLE ".TABLE_PREFIX."users ADD `inplayscenes_notification` int(1) unsigned NOT NULL DEFAULT '0';");
         }
     }
     // Posterinnerung Tage
     if (!$db->field_exists("inplayscenes_reminder_days", "users")) {
-        $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_days` int(5) unsigned NOT NULL DEFAULT '0';");
+        $db->query("ALTER TABLE ".TABLE_PREFIX."users ADD `inplayscenes_reminder_days` int(5) unsigned NOT NULL DEFAULT '0';");
     }
     // Posterinnerung Einstellung
     if (!$db->field_exists("inplayscenes_reminder_status", "users")) {
-        $db->query("ALTER TABLE `".TABLE_PREFIX."users` ADD `inplayscenes_reminder_status` int(1) unsigned NOT NULL DEFAULT '1';");
+        $db->query("ALTER TABLE ".TABLE_PREFIX."users ADD `inplayscenes_reminder_status` int(1) unsigned NOT NULL DEFAULT '1';");
     }
 
+    // UPDATE VERSTECKTE SZENEN
+    if (!$db->field_exists("scenetype", "inplayscenes")) {
+        $db->query("ALTER TABLE ".TABLE_PREFIX."inplayscenes CHANGE `openscene` `scenetype` INT(1) UNSIGNED NOT NULL DEFAULT '0';");
+    }
+    if (!$db->field_exists("hidetype", "inplayscenes")) {
+        $db->query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD `hidetype` int(1) unsigned NOT NULL DEFAULT '0' AFTER `scenetype`;");
+    }
+    if (!$db->field_exists("hideprofile", "inplayscenes")) {
+        $db->query("ALTER TABLE ".TABLE_PREFIX."inplayscenes ADD `hideprofile` int(1) unsigned NOT NULL DEFAULT '0' AFTER `hidetype`;");
+    }
 }
 
 // EINSTELLUNGEN
@@ -5734,7 +6904,7 @@ function inplayscenes_settings($type = 'install') {
         'inplayscenes_archive' => array(
             'title' => 'Inplay-Archiv',
             'description' => 'Bei welchen Foren handelt es sich um das Inplay-Archiv? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
-            'optionscode' => 'forumselect',
+            'optionscode' => 'forumselectsingle',
             'value' => '', // Default
             'disporder' => 2
         ),
@@ -5755,51 +6925,72 @@ function inplayscenes_settings($type = 'install') {
 		'inplayscenes_sideplays_archive' => array(
 			'title' => 'AU-Szenen-Archiv',
             'description' => 'Bei welchen Foren handelt es sich um das Archiv für das alternative Universum? Es reicht aus, die übergeordneten Kategorien oder das übergeordnete Forum zu markieren.',
-            'optionscode' => 'forumselect',
+            'optionscode' => 'forumselectsingle',
             'value' => '', // Default
             'disporder' => 5
 		),
-        'inplayscenes_open' => array(
+        'inplayscenes_scenetype' => array(
             'title' => 'Szenenarten',
             'description' => 'Soll es die Möglichkeit geben für verschiedene Szenenarten? Zur Auswahl stehen: privat, nach Absprache oder offen.',
             'optionscode' => 'yesno',
             'value' => '1', // Default
             'disporder' => 6
         ),
+        'inplayscenes_hide' => array(
+            'title' => 'Szenen verstecken',
+            'description' => 'Soll es die Möglichkeit geben Inplayszenen zu verstecken? Zählt als Szenenart, wenn diese aktiviert sind.',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 7
+        ),
+        'inplayscenes_hidetype' => array(
+            'title' => 'Art des Verstecken',
+            'description' => 'Wie sollen die Szenen versteckt werden? Entweder gibt es eine einheitliche Regelung für alle Szenen oder die Mitglieder können es für jede Szene individuell entscheiden.',
+            'optionscode' => 'select\n0=Szenen weiterhin anzeigen, aber nicht lesbar\n1=komplett verstecken\n2=individuell entscheiden lassen',
+            'value' => '0', // Default
+            'disporder' => 8
+        ),
+        'inplayscenes_hideprofile' => array(
+            'title' => 'versteckte Szenen im Profil',
+            'description' => 'Wie sollen versteckte Szenen im Profil angezeigt werden? Entweder gibt es eine einheitliche Regelung für alle Szenen oder die Mitglieder können es für jede Szene individuell entscheiden.',
+            'optionscode' => 'select\n0=Szenen normal anzeigen, aber Links sind nicht anklickbar\n1=komplett verstecken\n2=individuell entscheiden lassen',
+            'value' => '0', // Default
+            'disporder' => 9
+        ),
         'inplayscenes_trigger' => array(
             'title' => 'Triggerwarnungen',
             'description' => 'Sollen User ein Feld ausfüllen können, in welchem sie zusätzlich Triggerthemen angeben können, die in der Szene vorkommen können?',
             'optionscode' => 'yesno',
             'value' => '1', // Default
-            'disporder' => 7
+            'disporder' => 10
         ),
         'inplayscenes_information_thread' => array(
             'title' => 'Szeneninformationen: Showthread',
             'description' => 'Sollen im Template Showthread Szeneinformation angezeigt werden?',
             'optionscode' => 'yesno',
             'value' => '1', // Default
-            'disporder' => 8
+            'disporder' => 11
         ),
         'inplayscenes_information_posts' => array(
             'title' => 'Szeneninformationen: Postbit',
             'description' => 'Sollen in den Templates Postbit und Postbit_Classic Szeneinformation angezeigt werden?',
             'optionscode' => 'yesno',
             'value' => '1', // Default
-            'disporder' => 9
+            'disporder' => 12
         ),
         'inplayscenes_allscene' => array(
             'title' => 'Übersicht aller Inplayszenen',
             'description' => 'Soll es eine zentrale Übersicht aller Inplayszenen des Forums geben, die mit verschiedenen Filtern durchsucht und gefiltert werden können?',
             'optionscode' => 'yesno',
             'value' => '1', // Default
-            'disporder' => 10
+            'disporder' => 13
         ),
         'inplayscenes_nextuser' => array(
             'title' => 'Anzeige vom nächster Poster',
             'description' => 'Wie soll auf der Übersichtsseite gezeigt werden, dass man selbst nicht in der Szene dran ist?',
             'optionscode' => 'select\n0=Username vom nächsten Charakter\n1=Einfaches - du bist nicht dran\n2=Spitzname vom nächsten Mitglied',
             'value' => '0', // Default
-            'disporder' => 11
+            'disporder' => 14
         ),
         'inplayscenes_playername' => array(
             'title' => 'Spitzname',
@@ -5807,16 +6998,29 @@ function inplayscenes_settings($type = 'install') {
 			<b>Hinweis:</b> Bei klassischen Profilfeldern muss eine Zahl eintragen werden. Bei dem Steckbrief-Plugin von Risuena muss der Name/Identifikator des Felds eingetragen werden.',
             'optionscode' => 'text',
             'value' => '4', // Default
-            'disporder' => 12
+            'disporder' => 15
+        ),
+        'inplayscenes_months' => array(
+            'title' => 'Monatsanzeige',
+            'description' => 'Wie sollen die Monaten bei der Ausgabe vom Szenendatum angezeigt werden? Als Zahl oder mit dem Monatsnamen? Monatsnamen können in der Sprachdatei oder im ACP unter Sprache geändert werden.',
+            'optionscode' => 'select\n0=Zahl\n1=Wort',
+            'value' => '0', // Default
+            'disporder' => 16
+        ),
+        'inplayscenes_groupcolor' => array(
+            'title' => 'farbige Usernamen',
+            'description' => 'Sollen die Charakternamen die an der Szene teilnehmen in ihrer Gruppenfarbe dargestellt werden?',
+            'optionscode' => 'yesno',
+            'value' => '1', // Default
+            'disporder' => 17
         ),
         'inplayscenes_inactive_scenes' => array(
             'title' => 'inaktive Szenen',
             'description' => 'Ab wie vielen Monaten, ohne Post gelten Szenen als inaktiv? Inaktive Szenen werden automatisch ins Archiv verschoben. AU-Szenen sind nicht davon betroffen. (0 = schließt die Funktion aus)',
             'optionscode' => 'numeric',
             'value' => '0', // Default
-            'disporder' => 13
+            'disporder' => 18
         ),
-   
     );
 
     $gid = $db->fetch_field($db->write_query("SELECT gid FROM ".TABLE_PREFIX."settinggroups WHERE name = 'inplayscenes' LIMIT 1;"), "gid");
@@ -5843,14 +7047,36 @@ function inplayscenes_settings($type = 'install') {
         }
 
         // Weiter Einstellungs Updates
+        // Anzeigefolge
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '10' WHERE name = 'inplayscenes_trigger';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '11' WHERE name = 'inplayscenes_information_thread';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '12' WHERE name = 'inplayscenes_information_posts';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '13' WHERE name = 'inplayscenes_allscene';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '14' WHERE name = 'inplayscenes_nextuser';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '15' WHERE name = 'inplayscenes_playername';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '16' WHERE name = 'inplayscenes_months';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '17' WHERE name = 'inplayscenes_groupcolor';");
+        $db->query("UPDATE ".TABLE_PREFIX."settings SET disporder = '18' WHERE name = 'inplayscenes_inactive_scenes';");
 
+        // alte Einstellung löschen
+        $db->delete_query('settings', "name LIKE 'inplayscenes_open'");
+
+        // Forumselect ändern
+        $inplayscenes_archive = $db->fetch_field($db->simple_select("settings", "optionscode", "name= 'inplayscenes_archive'"), "optionscode");
+        if ($inplayscenes_archive != 'forumselectsingle') {
+            $db->query("UPDATE ".TABLE_PREFIX."settings SET optionscode = 'forumselectsingle' WHERE name = 'inplayscenes_archive';");
+        }
+        $inplayscenes_sideplays_archive = $db->fetch_field($db->simple_select("settings", "optionscode", "name= 'inplayscenes_sideplays_archive'"), "optionscode");
+        if ($inplayscenes_sideplays_archive != 'forumselectsingle') {
+            $db->query("UPDATE ".TABLE_PREFIX."settings SET optionscode = 'forumselectsingle' WHERE name = 'inplayscenes_sideplays_archive';");
+        }   
     }
 
     rebuild_settings();
 }
 
 // TEMPLATES
-function inplayscenes_templates() {
+function inplayscenes_templates($mode = '') {
 
     global $db;
 
@@ -5896,7 +7122,19 @@ function inplayscenes_templates() {
 							</div>
 						</div>
 						<div class="inplayscenes-formular_input-input">
-							{$postorder_select} {$openscene_select}
+							{$postorder_select} {$scenetype_select}
+						</div>
+					</div>
+
+					<div class="inplayscenes-formular_input-row" id="hidetype_row" style="display: none;">
+						<div class="inplayscenes-formular_input-desc">
+							<b>{$lang->inplayscenes_fields_hide}</b>
+							<div class="smalltext">
+								{$inplayscenes_fields_hide_desc}
+							</div>
+						</div>
+						<div class="inplayscenes-formular_input-input">
+							{$hidetype_select} {$hideprofile_select}
 						</div>
 					</div>
 
@@ -5928,6 +7166,26 @@ function inplayscenes_templates() {
         <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
         <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
         <script type="text/javascript">
+	
+        document.addEventListener(\'DOMContentLoaded\', function () {
+        var scenetypeSelect = document.querySelector(\'select[name="scenetype"]\');
+        var hidetypeRow = document.getElementById(\'hidetype_row\');
+
+        function toggleHidetypeRow() {
+            if (scenetypeSelect.value == \'3\') {
+                hidetypeRow.style.display = \'flex\';
+            } else {
+                hidetypeRow.style.display = \'none\';
+            }
+        }
+
+        // Initial check when the page loads
+        toggleHidetypeRow();
+
+        // Check whenever the selection changes
+        scenetypeSelect.addEventListener(\'change\', toggleHidetypeRow);
+        });
+
         <!--
         if(use_xmlhttprequest == "1")
         {
@@ -5996,10 +7254,23 @@ function inplayscenes_templates() {
     );
 
     $templates[] = array(
+        'title'		=> 'inplayscenes_error_hidenscenes',
+        'template'	=> $db->escape_string('Bei diesem Thema handelt es sich um eine versteckte Inplayszene.
+        <ol>
+        <li>Versteckte Inplayszenen können nur vom teilnehmenden Charakteren oder Teammitgliedern gelesen werden.</li>
+        <li>Dir fehlt die Berechtigung, diese Szene lesen zukönnen.</li>
+        <li>{$lang->error_nopermission_user_username}</li>
+        </ol>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
         'title'		=> 'inplayscenes_forumdisplay',
         'template'	=> $db->escape_string('<div class="smalltext">
         <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
+        <b>{$lang->inplayscenes_scenesetting}</b> {$scenetype}{$postorder}<br>
         <b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
         {$triggerwarning}
         {$inplayscenesfields}
@@ -6060,7 +7331,19 @@ function inplayscenes_templates() {
 
     $templates[] = array(
         'title'		=> 'inplayscenes_memberprofile_scenes',
-        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$scenedate} {$status}  - <a href="{$scenelink}">{$subject}</a><br><span class="smalltext">{$partnerusers}</span></div>'),
+        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$scenedate} {$status}  - <a href="{$scenelink}">{$subject}</a><br><span class="smalltext">{$partnerusers}</span></div> 
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        var links = document.querySelectorAll(".sceneLink");
+        links.forEach(function(link) {
+            if (link.getAttribute("href") === "") {
+                link.removeAttribute("href");
+                link.style.pointerEvents = "none";
+                link.style.textDecoration = "none";
+            }
+        });
+        });
+        </script>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -6095,7 +7378,16 @@ function inplayscenes_templates() {
 		<div class="smalltext">{$lang->inplayscenes_fields_scenesetting_desc}</div>
         </td>
         <td class="trow1">
-		{$postorder_select} {$openscene_select}
+		{$postorder_select} {$scenetype_select}
+        </td>
+        </tr>
+        <tr id="hidetype_row" style="display: none;">
+        <td class="trow1" width="20%">
+        <strong>{$lang->inplayscenes_fields_hide}</strong>
+        <div class="smalltext">{$inplayscenes_fields_hide_desc}</div>
+        </td>
+        <td class="trow1">
+        {$hidetype_select} {$hideprofile_select}
         </td>
         </tr>
         <tr>
@@ -6117,6 +7409,25 @@ function inplayscenes_templates() {
         <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
         <script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
         <script type="text/javascript">
+        document.addEventListener(\'DOMContentLoaded\', function () {
+        var scenetypeSelect = document.querySelector(\'select[name="scenetype"]\');
+        var hidetypeRow = document.getElementById(\'hidetype_row\');
+
+        function toggleHidetypeRow() {
+            if (scenetypeSelect.value == \'3\') {
+                hidetypeRow.style.display = \'table-row\';
+            } else {
+                hidetypeRow.style.display = \'none\';
+            }
+        }
+
+        // Initial check when the page loads
+        toggleHidetypeRow();
+
+        // Check whenever the selection changes
+        scenetypeSelect.addEventListener(\'change\', toggleHidetypeRow);
+        });
+
         <!--
         if(use_xmlhttprequest == "1")
         {
@@ -6224,7 +7535,7 @@ function inplayscenes_templates() {
 										<option value="1">{$lang->inplayscenes_postorder_fixed}</option>
 										<option value="0">{$lang->inplayscenes_postorder_none}</option>
 									</select>
-									{$openscene_filter}
+									{$scenetype_filter}
 								</div>
 							</div>
 
@@ -6340,11 +7651,11 @@ function inplayscenes_templates() {
     );
 
     $templates[] = array(
-        'title'		=> 'inplayscenes_overview_openscene_filter',
-        'template'	=> $db->escape_string('<select name="scenesetting" data-selected2="{$scenesetting}">
-        <option value="0">{$lang->inplayscenes_openscene_private}</option>
-        <option value="1">{$lang->inplayscenes_openscene_agreed}</option>
-        <option value="2">{$lang->inplayscenes_openscene_open}</option>
+        'title'		=> 'inplayscenes_overview_scenetype_filter',
+        'template'	=> $db->escape_string('<select name="scenetype" data-selected2="{$scenetype}">
+        <option value="0">{$lang->inplayscenes_scenetype_private}</option>
+        <option value="1">{$lang->inplayscenes_scenetype_agreed}</option>
+        <option value="2">{$lang->inplayscenes_scenetype_open}</option>
         </select>
 
         <script type="text/javascript">
@@ -6368,12 +7679,12 @@ function inplayscenes_templates() {
         'title'		=> 'inplayscenes_overview_scene',
         'template'	=> $db->escape_string('<div class="inplayscenes_overview-scene-row">
         <div class="inplayscenes_overview-scene-column">
-		<strong>{$AUscene}{$openscene}{$postorder}</strong>
+		<strong>{$AUscene}{$scenetype}{$postorder}</strong>
         </div>
         <div class="inplayscenes_overview-scene-column">
-		<strong><a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
+		<strong><a href="{$scenelink}" target="_blank" class="sceneLink">{$subject}</a></strong><br>
 		<b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-		<b>{$lang->inplayscenes_scenesetting}</b> {$scenedate}<br>
+		<b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
 		{$triggerwarning}
 		{$inplayscenesfields}
         </div>
@@ -6381,7 +7692,20 @@ function inplayscenes_templates() {
 		<strong><a href="{$lastpostlink}" target="_blank">{$lang->inplayscenes_lastpost}</a></strong><br>
 		{$lastpostdate}<br />{$lastposter}
         </div>
-        </div>'),
+        </div>
+        
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        var links = document.querySelectorAll(".sceneLink");
+        links.forEach(function(link) {
+            if (link.getAttribute("href") === "") {
+                link.removeAttribute("href");
+                link.style.pointerEvents = "none";
+                link.style.textDecoration = "none";
+            }
+        });
+        });
+        </script>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
@@ -6411,7 +7735,7 @@ function inplayscenes_templates() {
 		<input type="hidden" name="scenestatus" value="{$scenestatus}">
 		<input type="hidden" name="area" value="{$area}">
 		<input type="hidden" name="postorder" value="{$postorder_input}">
-		<input type="hidden" name="scenesetting" value="{$scenesetting}">
+		{$scenetype_input}
 		<input type="hidden" name="charactername" value="{$charactername}">
 		<input type="hidden" name="playername" value="{$playername}">
 		
@@ -6448,7 +7772,7 @@ function inplayscenes_templates() {
         <div class="thead">{$lang->inplayscenes_postbit}</div>
         <div class="smalltext">
         <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
+        <b>{$lang->inplayscenes_scenesetting}</b> {$scenetype}{$postorder}<br>
 		<b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
 		{$triggerwarning}
 		{$inplayscenesfields}
@@ -6566,7 +7890,7 @@ function inplayscenes_templates() {
 			</div>
 			<div class="inplayscenes_showthread-bit">
 				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_scenesetting}</strong></div>
-				<div class="inplayscenes_showthread-value">{$openscene}{$postorder}</div>
+				<div class="inplayscenes_showthread-value">{$scenetype}{$postorder}</div>
 			</div>
 			<div class="inplayscenes_showthread-bit">
 				<div class="inplayscenes_showthread-label"><strong>{$lang->inplayscenes_showthread_date}</strong></div>
@@ -6802,7 +8126,7 @@ function inplayscenes_templates() {
         'title'		=> 'inplayscenes_user_scene_infos',
         'template'	=> $db->escape_string('<strong><a href="{$scenelink}" target="_blank">{$subject}</a></strong><br>
         <b>{$lang->inplayscenes_characters}</b> {$partnerusers}<br>
-        <b>{$lang->inplayscenes_scenesetting}</b> {$openscene}{$postorder}<br>
+        <b>{$lang->inplayscenes_scenesetting}</b> {$scenetype}{$postorder}<br>
         <b>{$lang->inplayscenes_date}</b> {$scenedate}<br>
         {$triggerwarning}
         {$inplayscenesfields}'),
@@ -6819,11 +8143,78 @@ function inplayscenes_templates() {
         'dateline'	=> TIME_NOW
     );
 
-    foreach ($templates as $template) {
-        $check = $db->num_rows($db->simple_select("templates", "title", "title = '".$template['title']."'"));
-        if ($check == 0) {
-          $db->insert_query("templates", $template);
-        } 
+    if ($mode == "update") {
+
+        $db->query("UPDATE ".TABLE_PREFIX."templates SET title = 'inplayscenes_overview_scenetype_filter' WHERE title = 'inplayscenes_overview_openscene_filter'");
+
+        foreach ($templates as $template) {
+            $query = $db->simple_select("templates", "tid, template", "title = '".$template['title']."' AND sid = '-2'");
+            $existing_template = $db->fetch_array($query);
+
+            if($existing_template) {
+                if ($existing_template['template'] !== $template['template']) {
+                    $db->update_query("templates", array(
+                        'template' => $template['template'],
+                        'dateline' => TIME_NOW
+                    ), "tid = '".$existing_template['tid']."'");
+                }
+            }
+            
+            else {
+                $db->insert_query("templates", $template);
+            }
+        }
+
+        // VARIABLEN EINFÜGEN
+        require MYBB_ROOT."/inc/adminfunctions_templates.php";
+        find_replace_templatesets('inplayscenes_editscene', '#'.preg_quote('{$openscene_select}').'#', '{$scenetype_select}');
+        find_replace_templatesets('inplayscenes_forumdisplay', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
+        find_replace_templatesets('inplayscenes_memberprofile_scenes', '#'.preg_quote('<a href="{$scenelink}">{$subject}</a>').'#', '<a href="{$scenelink}" class="sceneLink">{$subject}</a>');
+        find_replace_templatesets('inplayscenes_memberprofile_scenes', '#'.preg_quote('</div>').'#', '</div>\n\n<script>
+        document.addEventListener("DOMContentLoaded", function() {
+        var links = document.querySelectorAll(".sceneLink");
+        links.forEach(function(link) {
+            if (link.getAttribute("href") === "") {
+                link.removeAttribute("href");
+                link.style.pointerEvents = "none";
+                link.style.textDecoration = "none";
+            }
+        });
+        });
+        </script>');
+        find_replace_templatesets('inplayscenes_newthread', '#'.preg_quote('{$openscene_select}').'#', '{$scenetype_select}');
+        find_replace_templatesets('inplayscenes_overview', '#'.preg_quote('{$openscene_filter}').'#', '{$scenetype_filter}');
+        find_replace_templatesets('inplayscenes_overview_scene', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
+        find_replace_templatesets('inplayscenes_overview_scene', '#'.preg_quote('<a href="{$scenelink}" target="_blank">{$subject}</a>').'#', '<a href="{$scenelink}" target="_blank" class="sceneLink">{$subject}</a>');
+        find_replace_templatesets('inplayscenes_overview_scene', '#'.preg_quote('</div>').'#', '</div>\n\n<script>
+        document.addEventListener("DOMContentLoaded", function() {
+        var links = document.querySelectorAll(".sceneLink");
+        links.forEach(function(link) {
+            if (link.getAttribute("href") === "") {
+                link.removeAttribute("href");
+                link.style.pointerEvents = "none";
+                link.style.textDecoration = "none";
+            }
+        });
+        });
+        </script>');
+        find_replace_templatesets('inplayscenes_overview_scene_sort', '#'.preg_quote('<input type="hidden" name="scenesetting" value="{$scenesetting}">').'#', '{$scenetype_input}');
+        find_replace_templatesets('inplayscenes_overview_scenetype_filter', '#'.preg_quote('{$lang->inplayscenes_openscene_private}').'#', '{$lang->inplayscenes_scenetype_private}');
+        find_replace_templatesets('inplayscenes_overview_scenetype_filter', '#'.preg_quote('{$lang->inplayscenes_openscene_agreed}').'#', '{$lang->inplayscenes_scenetype_agreed}');
+        find_replace_templatesets('inplayscenes_overview_scenetype_filter', '#'.preg_quote('{$lang->inplayscenes_openscene_open}').'#', '{$lang->inplayscenes_scenetype_open}');
+        find_replace_templatesets('inplayscenes_postbit', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
+        find_replace_templatesets('inplayscenes_showthread', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
+        find_replace_templatesets('inplayscenes_user_scene_infos', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
+        find_replace_templatesets('search_results_threads', '#'.preg_quote('{$lang->search_results}').'#', '{$lang->search_results} {$count_hidescenes}');
+        find_replace_templatesets('search_results_posts', '#'.preg_quote('{$lang->search_results}').'#', '{$lang->search_results} {$count_hidescenes}');
+	
+    } else {
+        foreach ($templates as $template) {
+            $check = $db->num_rows($db->simple_select("templates", "title", "title = '".$template['title']."'"));
+            if ($check == 0) {
+                $db->insert_query("templates", $template);
+            }
+        }
     }
 }
 
@@ -7083,9 +8474,8 @@ function inplayscenes_is_updated(){
 
     global $db, $mybb;
 
-    if ($db->table_exists("inplayscenes_fields")) {
+    if ($db->field_exists("hideprofile", "inplayscenes") && $db->field_exists("scenetype", "inplayscenes")) {
         return true;
     }
     return false;
-
 }
