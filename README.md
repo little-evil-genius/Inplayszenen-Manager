@@ -26,8 +26,6 @@ Bei Account-Löschung werden betroffene Inplayszenen entsprechend in das Archiv 
 # Vorrausetzung
 - Das ACP Modul <a href="https://github.com/little-evil-genius/rpgstuff_modul" target="_blank">RPG Stuff</a> <b>muss</b> vorhanden sein.
 - Der <a href="https://www.mybb.de/erweiterungen/18x/plugins-verschiedenes/enhanced-account-switcher/" target="_blank">Accountswitcher</a> von doylecc <b>muss</b> installiert sein.
-- Inplay-Bereich & dazugehöriges Archiv
-- alternativen Universen (AU)/"was wäre, wenn..."-Bereich & dazugehöriges Archiv
 
 # Individuelle Szenenfelder
 Dieses Plugin bietet Flexibilität, indem nur die Felder für Charaktere und Datum sowie optional für Triggerwarnungen fest vordefiniert sind. Alle weiteren Felder können vom Team im ACP individuell erstellt werden, um den Anforderungen des Forums gerecht zu werden. Jedes Szenenfeld erhält dabei einen eindeutigen Identifikator, der keine Sonderzeichen oder Leerzeichen enthalten darf, um maschinenlesbar zu sein.<br>
@@ -44,7 +42,7 @@ Das Plugin bietet die Möglichkeit, Szeneninformationen in verschiedenen Bereich
 Für alle drei Templates gibt es eine kompakte Variable, die eine schlichte Ausgabe der Szeneninformationen ermöglicht. Das Team kann die entsprechenden Templates für die kompakte Variable anpassen, um die gewünschten Informationen darzustellen. Die Szenenfelder können jedoch auch direkt angesprochen werden und entweder in das Template für die kompakte Variable eingefügt werden oder direkt in die entsprechenden Templates "forumdisplay_thread" (Forumdisplay), "showthread" (Showthread) sowie "postbit" und "postbit_classic" (Postbit), um die Szeneninformationen dort individuell anzuzeigen.<br>
 - {$inplayscene['scenedate']}: Datum der Szene
 - {$inplayscene['partnerusers']}: Teilnehmende Charaktere
-- {$inplayscene['openscene']}: Szenenart
+- {$inplayscene['scenetype']}: Szenenart
 - {$inplayscene['postorder']}: Postingreihenfolge
 - {$inplayscene['trigger']}: Triggerwarnung (falls aktiviert)
 - {$inplayscene['Identifikator']}: Individuelles Szenenfeld<br>
@@ -87,7 +85,7 @@ Das Plugin archiviert Szenen nur in diesen zwei Fällen (Accountlöschung und In
 
 # PDF-Export
 Mit dieser Funktion können alle Mitglieder:innen des Forums einzelne Inplaybeiträge oder ganze Szenen als PDF-Datei abspeichern. Der Titel der Szene wird dabei als Hauptüberschrift im PDF-Dokument verwendet. Die kleinere Überschrift, die unter dem Titel erscheint, kann jedes Team im Template "inplayscenes_pdf_fields" individuell anpassen.<br>
-Standardmäßig werden im PDF nur die Charakternamen und das Szenendatum angezeigt. Das Team kann jedoch zusätzliche Informationen wie individuelle Szenenfelder mit {$inplayscene['Identifikator']}, die Postingreihenfolge mit {$inplayscene['postorder']} oder den Szenentyp mit {$inplayscene['openscene']} integrieren.<br>
+Standardmäßig werden im PDF nur die Charakternamen und das Szenendatum angezeigt. Das Team kann jedoch zusätzliche Informationen wie individuelle Szenenfelder mit {$inplayscene['Identifikator']}, die Postingreihenfolge mit {$inplayscene['postorder']} oder den Szenentyp mit {$inplayscene['scenetype']} integrieren.<br>
 <br>
 <b>Wichtig:</b> Für die PDF-Exportfunktion verwende ich die TCPDF-Bibliothek, die viele HTML-Befehle unterstützt, jedoch nur eingeschränkt CSS-Befehle. Daher sollten nur eher auf einfache HTML-Tags wie ```<br>``` oder ```<b>``` zurückgegriffen werden, um die Ausgabe korrekt zu gestalten.
 
@@ -121,12 +119,17 @@ hinzugefügte Spalten in der Tabelle <b>users</b>:
 - AU-Szenen-Bereich
 - AU-Szenen-Archiv
 - Szenenarten
+- Szenen verstecken
+- Art des Verstecken
+- versteckte Szenen im Profil
 - Triggerwarnungen
 - Szeneninformationen: Showthread
 - Szeneninformationen: Postbit
 - Übersicht aller Inplayszenen
 - Anzeige vom nächster Poster
 - Spielername
+- Monatsanzeige
+- farbige Usernamen
 - inaktive Szenen<br>
 <br>
 <b>HINWEIS:</b><br>
@@ -139,6 +142,7 @@ Das Plugin ist kompatibel mit den klassischen Profilfeldern von MyBB und/oder de
 - inplayscenes_counter
 - inplayscenes_editscene
 - inplayscenes_editscene_fields
+- inplayscenes_error_hidenscenes
 - inplayscenes_forumdisplay
 - inplayscenes_forumdisplay_fields
 - inplayscenes_memberprofile
@@ -154,6 +158,7 @@ Das Plugin ist kompatibel mit den klassischen Profilfeldern von MyBB und/oder de
 - inplayscenes_overview_scene_fields
 - inplayscenes_overview_scene_none
 - inplayscenes_overview_scene_sort
+- inplayscenes_overview_scenetype_filter
 - inplayscenes_pdf_fields
 - inplayscenes_postbit
 - inplayscenes_postbit_fields
@@ -171,14 +176,14 @@ Das Plugin ist kompatibel mit den klassischen Profilfeldern von MyBB und/oder de
 - inplayscenes_showthread_pdf
 - inplayscenes_showthread_relevant
 - inplayscenes_user
-- inplayscenes_usersettings
-- inplayscenes_usersettings_notification
 - inplayscenes_user_character
 - inplayscenes_user_none
 - inplayscenes_user_scene
 - inplayscenes_user_scene_fields
 - inplayscenes_user_scene_infos
-- inplayscenes_user_scene_last<br><br>
+- inplayscenes_user_scene_last
+- inplayscenes_usersettings
+- inplayscenes_usersettings_notification<br><br>
 <b>HINWEIS:</b><br>
 Alle Templates wurden größtenteils ohne Tabellen-Struktur gecodet. Das Layout wurde auf ein MyBB Default Design angepasst.
 
@@ -190,6 +195,8 @@ Alle Templates wurden größtenteils ohne Tabellen-Struktur gecodet. Das Layout 
 - member_profile: {$inplayscenes_memberprofile}
 - newthread: {$newthread_inplayscenes}
 - postbit & postbit_classic: {$post['inplayscenes_postbit']} & {$post['inplayscenes_pdf']}
+- search_results_posts: {$count_hidescenes}
+- search_results_threads: {$count_hidescenes}
 - showthread: {$inplayscenes_pdf} & {$inplayscenes_relevant} & {$inplayscenes_add} & {$inplayscenes_edit} & {$inplayscenes_showthread}
 
 # Neues CSS - inplayqscenes.css
