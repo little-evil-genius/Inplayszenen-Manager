@@ -8170,34 +8170,10 @@ function inplayscenes_templates($mode = '') {
         find_replace_templatesets('inplayscenes_editscene', '#'.preg_quote('{$openscene_select}').'#', '{$scenetype_select}');
         find_replace_templatesets('inplayscenes_forumdisplay', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
         find_replace_templatesets('inplayscenes_memberprofile_scenes', '#'.preg_quote('<a href="{$scenelink}">{$subject}</a>').'#', '<a href="{$scenelink}" class="sceneLink">{$subject}</a>');
-        find_replace_templatesets('inplayscenes_memberprofile_scenes', '#'.preg_quote('</div>').'#', '</div>\n\n<script>
-        document.addEventListener("DOMContentLoaded", function() {
-        var links = document.querySelectorAll(".sceneLink");
-        links.forEach(function(link) {
-            if (link.getAttribute("href") === "") {
-                link.removeAttribute("href");
-                link.style.pointerEvents = "none";
-                link.style.textDecoration = "none";
-            }
-        });
-        });
-        </script>');
         find_replace_templatesets('inplayscenes_newthread', '#'.preg_quote('{$openscene_select}').'#', '{$scenetype_select}');
         find_replace_templatesets('inplayscenes_overview', '#'.preg_quote('{$openscene_filter}').'#', '{$scenetype_filter}');
         find_replace_templatesets('inplayscenes_overview_scene', '#'.preg_quote('{$openscene}').'#', '{$scenetype}');
         find_replace_templatesets('inplayscenes_overview_scene', '#'.preg_quote('<a href="{$scenelink}" target="_blank">{$subject}</a>').'#', '<a href="{$scenelink}" target="_blank" class="sceneLink">{$subject}</a>');
-        find_replace_templatesets('inplayscenes_overview_scene', '#'.preg_quote('</div>').'#', '</div>\n\n<script>
-        document.addEventListener("DOMContentLoaded", function() {
-        var links = document.querySelectorAll(".sceneLink");
-        links.forEach(function(link) {
-            if (link.getAttribute("href") === "") {
-                link.removeAttribute("href");
-                link.style.pointerEvents = "none";
-                link.style.textDecoration = "none";
-            }
-        });
-        });
-        </script>');
         find_replace_templatesets('inplayscenes_overview_scene_sort', '#'.preg_quote('<input type="hidden" name="scenesetting" value="{$scenesetting}">').'#', '{$scenetype_input}');
         find_replace_templatesets('inplayscenes_overview_scenetype_filter', '#'.preg_quote('{$lang->inplayscenes_openscene_private}').'#', '{$lang->inplayscenes_scenetype_private}');
         find_replace_templatesets('inplayscenes_overview_scenetype_filter', '#'.preg_quote('{$lang->inplayscenes_openscene_agreed}').'#', '{$lang->inplayscenes_scenetype_agreed}');
