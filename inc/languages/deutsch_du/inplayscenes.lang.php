@@ -150,11 +150,11 @@ $l['inplayscenes_alert_openadd'] = '{1} ist der öffentlichen Szene <b>"{5}"</b>
 $l['myalerts_setting_inplayscenes_alert_openadd'] = "Benachrichtigung erhalten, wenn sich jemand neu in eine öffentliche Szene einträgt?";
 
 $l['inplayscenes_pm_newthread_subject'] = "Eine neue Szene wurde erstellt";
-$l['inplayscenes_pm_newthread_message'] = "Hallo {1},<br>ich habe die Szene {2} erstellt und deinen Charakter hinzugefügt. ";
+$l['inplayscenes_pm_newthread_message'] = "Hallo {1},<br>ich habe die Szene <a href=\"{2}\" target=\"_blank\">{3}</a> erstellt und deinen Charakter hinzugefügt. ";
 $l['inplayscenes_pm_newreply_subject'] = "Neue Antwort in der Szene {1}";
-$l['inplayscenes_pm_newreply_message'] = "Hallo {1},<br>Ich habe in unserer gemeinsamen Szene {2} gepostet. ";
+$l['inplayscenes_pm_newreply_message'] = "Hallo {1},<br>Ich habe in unserer gemeinsamen Szene <a href=\"{2}\" target=\"_blank\">{3}</a> gepostet. ";
 $l['inplayscenes_pm_openadd_subject'] = "Deiner öffentlichen Szene wurde ein Charakter hinzugefügt";
-$l['inplayscenes_pm_openadd_message'] = "Hallo {1},<br>Ich habe meinen Charakter {2} zu deiner öffentlichen Szene {3} hinzugefügt.";
+$l['inplayscenes_pm_openadd_message'] = "Hallo {1},<br>Ich habe meinen Charakter {2} zu deiner öffentlichen Szene <a href=\"{3}\" target=\"_blank\">{4}</a> hinzugefügt.";
 
 $l['inplayscenes_online_location_inplayscenes'] = "Sieht sich die <a href=\"misc.php?action=inplayscenes\">persönliche Szenenübersicht</a> an.";
 $l['inplayscenes_online_location_all'] = "Sieht sich die <a href=\"misc.php?action=all_inplayscenes\">Szenenübersicht vom Board</a> an.";
