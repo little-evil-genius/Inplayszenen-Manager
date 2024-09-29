@@ -3,9 +3,16 @@ $l['inplayscenes'] = "Inplayszenen";
 $l['inplayscenes_postorder_fixed'] = "feste Postreihenfolge";
 $l['inplayscenes_postorder_none'] = "keine Postreihenfolge";
 
-$l['inplayscenes_openscene_private'] = "private Szene";
-$l['inplayscenes_openscene_agreed'] = "nach Absprache";
-$l['inplayscenes_openscene_open'] = "öffentliche Szene";
+$l['inplayscenes_scenetype_private'] = "private Szene";
+$l['inplayscenes_scenetype_agreed'] = "nach Absprache";
+$l['inplayscenes_scenetype_open'] = "öffentliche Szene";
+$l['inplayscenes_scenetype_hide'] = "versteckte Szene";
+$l['inplayscenes_scenetype_visible'] = "nicht verstecken";
+
+$l['inplayscenes_hidetype_info'] = "Nur Szeneninfos zeigen (Szene nicht lesbar)";
+$l['inplayscenes_hidetype_all'] = "Komplett verstecken";
+$l['inplayscenes_hideprofile_info'] = "im Profil anzeigen";
+$l['inplayscenes_hideprofile_all'] = "im Profil verstecken";
 
 $l['inplayscenes_search_character'] = "Charakter suchen";
 $l['inplayscenes_search_player'] = "Spieler:in suchen";
@@ -15,6 +22,13 @@ $l['inplayscenes_fields_partners_desc'] = "Gib hier die Charaktere für die Szen
 $l['inplayscenes_fields_partners_hint'] = "Füge deinen eigenen Charakter nicht mit ein!";
 $l['inplayscenes_fields_scenesetting'] = "Szenen-Einstellungen";
 $l['inplayscenes_fields_scenesetting_desc'] = "Szenen ohne Postingreihenfolge werden im Tracker immer als offene Szene angezeigt!";
+$l['inplayscenes_fields_hide'] = "Versteck-Einstellungen";
+$l['inplayscenes_fields_hide_desc'] = "Wie soll diese Inplayszene versteckt werden vor anderen Mitgliedern?";
+$l['inplayscenes_fields_hide_team'] = "Das Team hat folgende Einstellungen für versteckte Szenen festgelegt:";
+$l['inplayscenes_fields_hidetype_info'] = "- Szeneninformationen werden angezeigt. Szene ist <b>nicht</b> lesbar.";
+$l['inplayscenes_fields_hidetype_all'] = "- Szene wird komplett versteckt vor anderen.";
+$l['inplayscenes_fields_hideprofile_info'] = "<br>- Szene wird im Profil angezeigt.";
+$l['inplayscenes_fields_hideprofile_all'] = "<br>- Szene wird nicht im Profil angezeigt.";
 $l['inplayscenes_fields_date'] = "Datum";
 $l['inplayscenes_fields_date_desc'] = "An welchem Tag spielt die Szene?";
 $l['inplayscenes_fields_date_hint'] = "Achte darauf, dass alle Charaktere innerhalb dieser Szene auch Zeit haben und nicht schon an einem anderem Ort sind.";
@@ -67,7 +81,8 @@ $l['inplayscenes_overview_sort_lastpost'] = "Letzter Post";
 $l['inplayscenes_overview_sort_asc'] = "Aufsteigend";
 $l['inplayscenes_overview_sort_desc'] = "Absteigend";
 $l['inplayscenes_overview_sort_button'] = "Sortieren";
-$l['inplayscenes_overview_counter'] = "{1} von insgesamt {2} Inplayszenen";
+$l['inplayscenes_overview_counter'] = "{1} von insgesamt {2} Inplayszenen {3}";
+$l['inplayscenes_overview_counter_hide'] = "({1} davon komplett versteckt)";
 $l['inplayscenes_overview_none'] = "Es wurden keine Inplayszenen mit den eingegebenen Kriterien gefunden.<br>Bitte versuche es mit einem anderen Filtern erneut.";
 $l['inplayscenes_overview_au'] = "AU-Szene";
 
@@ -124,7 +139,7 @@ $l['inplayscenes_next'] = "<span class=\"inplayscene_next_none\">Du bist nicht d
 $l['inplayscenes_next_playername'] = "<span class=\"inplayscene_next_none\">{1} ist dran!</span>";
 $l['inplayscenes_next_username'] = "<span class=\"inplayscene_next_none\">{1}</span>";
 
-$l['inplayscenes_alert_alerts'] = "Alerts";
+$l['inplayscenes_alert_alerts'] = "keine Postreihenfolge";
 $l['inplayscenes_alert_pm'] = "Private Nachrichten";
 
 $l['inplayscenes_alert_newthread'] = '{1} hat die neue Szene <b>"{5}"</b> mit dir erstellt!';
@@ -134,12 +149,12 @@ $l['myalerts_setting_inplayscenes_alert_newreply'] = "Benachrichtigung erhalten,
 $l['inplayscenes_alert_openadd'] = '{1} ist der öffentlichen Szene <b>"{5}"</b> beigetreten!';
 $l['myalerts_setting_inplayscenes_alert_openadd'] = "Benachrichtigung erhalten, wenn sich jemand neu in eine öffentliche Szene einträgt?";
 
-$l['inplayscenes_pm_newthread_subject'] = "Neue Inplayszene eröffnet";
-$l['inplayscenes_pm_newthread_message'] = "Hallo,<br>Ich habe eine neue Szene mit deinem Charakter erstellt.";
-$l['inplayscenes_pm_newreply_subject'] = "Neuer Inplaypost";
-$l['inplayscenes_pm_newreply_message'] = "Hallo,<br>Ich habe in unserer Szene gepostet.";
-$l['inplayscenes_pm_openadd_subject'] = "Neuer Charakter in der öffentlichen Szene";
-$l['inplayscenes_pm_openadd_message'] = "Hallo,<br>Ich habe mich in zu der öffentlichen Szene hinzugefügt.";
+$l['inplayscenes_pm_newthread_subject'] = "Eine neue Szene wurde erstellt";
+$l['inplayscenes_pm_newthread_message'] = "Hallo {1},<br>ich habe die Szene {2} erstellt und deinen Charakter hinzugefügt. ";
+$l['inplayscenes_pm_newreply_subject'] = "Neue Antwort in der Szene {1}";
+$l['inplayscenes_pm_newreply_message'] = "Hallo {1},<br>Ich habe in unserer gemeinsamen Szene {2} gepostet. ";
+$l['inplayscenes_pm_openadd_subject'] = "Deiner öffentlichen Szene wurde ein Charakter hinzugefügt";
+$l['inplayscenes_pm_openadd_message'] = "Hallo {1},<br>Ich habe meinen Charakter {2} zu deiner öffentlichen Szene {3} hinzugefügt.";
 
 $l['inplayscenes_online_location_inplayscenes'] = "Sieht sich die <a href=\"misc.php?action=inplayscenes\">persönliche Szenenübersicht</a> an.";
 $l['inplayscenes_online_location_all'] = "Sieht sich die <a href=\"misc.php?action=all_inplayscenes\">Szenenübersicht vom Board</a> an.";
@@ -147,3 +162,19 @@ $l['inplayscenes_online_location_edit'] = "Bearbeitet gerade die Szeneninformati
 $l['inplayscenes_online_location_pdf_post'] = "Speichert sich aus <a href=\"showthread.php?tid={1}&pid={2}#pid{2}\">{3}</a> ein Beitrag als PDF ab.";
 $l['inplayscenes_online_location_pdf_topic'] = "Speichert sich <a href=\"showthread.php?tid={1}&pid={2}#pid{2}\">{3}</a> als PDF ab.";
 $l['inplayscenes_online_location_postingreminder'] = "Sieht sich die eigene <a href=\"misc.php?action=misc.php?action=postingreminder\">Posting-Erinnerungen</a> an.";
+
+$l['inplayscenes_jan'] = "Januar";
+$l['inplayscenes_feb'] = "Februar";
+$l['inplayscenes_mar'] = "März";
+$l['inplayscenes_apr'] = "April";
+$l['inplayscenes_mai'] = "Mai";
+$l['inplayscenes_jun'] = "Juni";
+$l['inplayscenes_jul'] = "Juli";
+$l['inplayscenes_aug'] = "August";
+$l['inplayscenes_sep'] = "September";
+$l['inplayscenes_okt'] = "Oktober";
+$l['inplayscenes_nov'] = "November";
+$l['inplayscenes_dez'] = "Dezember";
+
+$l['inplayscenes_hide_results'] = "({1} versteckte Inplayszene)";
+$l['inplayscenes_hide_prev'] = "Bei diesem Thema handelt es sich um eine halbversteckte Szene. Du hast keine Berechtigung dieses Thema zulesen.";
