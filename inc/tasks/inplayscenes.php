@@ -49,14 +49,10 @@ function task_inplayscenes($task){
         while($ilist = $db->fetch_array($allinplay_query)) {
     
             // Datum extrahieren
-            $date = $ilist['date']; // Format: YYYY-MM-DD
-            $year = date('Y', strtotime($date));
-            $month_number = date('m', strtotime($date)); // Numerischer Monatswert (01-12)
+            list($year, $month_number, $day) = explode('-', $ilist['date']);
     
-            // Passenden Monatsnamen aus der Sprachliste suchen
             $possible_month_names = $months[$month_number];
     
-            // Überprüfen, ob ein passendes Archiv-Unterforum existiert
             $subforum_fid = false;
             foreach ($possible_month_names as $month_name) {
                 $subforum_query = $db->simple_select("forums", "fid", "name = '".$month_name." ".$year."' AND pid = ".$inplay_archive."");
@@ -73,17 +69,14 @@ function task_inplayscenes($task){
                 $new_fid = $inplay_archive;
             }
     
-            // FID in den Threads und Posts aktualisieren
             $update_iFid = array('fid' => $new_fid);
             $db->update_query('threads', $update_iFid, "tid='".$ilist['tid']."'");
             $db->update_query('posts', $update_iFid, "tid='".$ilist['tid']."'");
     
-            // Forum-Zähler aktualisieren
             require_once MYBB_ROOT . "inc/functions_rebuild.php";
-            rebuild_forum_counters($ilist['fid']); // Altes Forum
-            rebuild_forum_counters($new_fid);      // Neues Forum
+            rebuild_forum_counters($ilist['fid']); 
+            rebuild_forum_counters($new_fid);    
     
-            // Cache aktualisieren
             $cache->update_forums();
             $cache->update_stats();
         }
