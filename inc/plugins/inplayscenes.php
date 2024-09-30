@@ -7257,7 +7257,7 @@ function inplayscenes_templates($mode = '') {
         'title'		=> 'inplayscenes_error_hidenscenes',
         'template'	=> $db->escape_string('Bei diesem Thema handelt es sich um eine versteckte Inplayszene.
         <ol>
-        <li>Versteckte Inplayszenen können nur vom teilnehmenden Charakteren oder Teammitgliedern gelesen werden.</li>
+        <li>Versteckte Inplayszenen können nur von teilnehmenden Charakteren oder Teammitgliedern gelesen werden.</li>
         <li>Dir fehlt die Berechtigung, diese Szene lesen zukönnen.</li>
         <li>{$lang->error_nopermission_user_username}</li>
         </ol>'),
