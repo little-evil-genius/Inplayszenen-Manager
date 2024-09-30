@@ -139,7 +139,7 @@ $l['inplayscenes_next'] = "<span class=\"inplayscene_next_none\">Du bist nicht d
 $l['inplayscenes_next_playername'] = "<span class=\"inplayscene_next_none\">{1} ist dran!</span>";
 $l['inplayscenes_next_username'] = "<span class=\"inplayscene_next_none\">{1}</span>";
 
-$l['inplayscenes_alert_alerts'] = "keine Postreihenfolge";
+$l['inplayscenes_alert_alerts'] = "Alerts";
 $l['inplayscenes_alert_pm'] = "Private Nachrichten";
 
 $l['inplayscenes_alert_newthread'] = '{1} hat die neue Szene <b>"{5}"</b> mit dir erstellt!';
