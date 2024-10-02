@@ -3,6 +3,7 @@ $l['inplayscenes'] = "Inplayszenen";
 $l['inplayscenes_postorder_fixed'] = "feste Postreihenfolge";
 $l['inplayscenes_postorder_none'] = "keine Postreihenfolge";
 
+$l['inplayscenes_scenetype_all'] = "Alle Szenentypen";
 $l['inplayscenes_scenetype_private'] = "private Szene";
 $l['inplayscenes_scenetype_agreed'] = "nach Absprache";
 $l['inplayscenes_scenetype_open'] = "öffentliche Szene";
@@ -178,3 +179,7 @@ $l['inplayscenes_dez'] = "Dezember";
 
 $l['inplayscenes_hide_results'] = "({1} versteckte Inplayszene)";
 $l['inplayscenes_hide_prev'] = "Bei diesem Thema handelt es sich um eine halbversteckte Szene. Du hast keine Berechtigung dieses Thema zulesen.";
+$l['inplayscenes_hide_nopermission_1'] = "Bei diesem Thema handelt es sich um eine versteckte Inplayszene.";
+$l['inplayscenes_hide_nopermission_2'] = "Versteckte Inplayszenen können nur von teilnehmenden Charakteren oder Teammitgliedern gelesen werden.";
+$l['inplayscenes_hide_nopermission_3'] = "Dir fehlt die Berechtigung, diese Szene lesen zukönnen.";
+$l['inplayscenes_hide_nopermission_4'] = "Du bist zur Zeit mit diesem Charakter angemeldet: '{1}'";
