@@ -7475,7 +7475,7 @@ function inplayscenes_templates($mode = '') {
 
     $templates[] = array(
         'title'		=> 'inplayscenes_memberprofile_scenes',
-        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$scenedate} {$status}  - <a href="{$scenelink}">{$subject}</a><br><span class="smalltext">{$partnerusers}</span></div> 
+        'template'	=> $db->escape_string('<div class="inplayscenes_memberprofile-scenes">{$scenedate} {$status}  - <a href="{$scenelink}" class="sceneLink">{$subject}</a><br><span class="smalltext">{$partnerusers}</span></div> 
         <script>
         document.addEventListener("DOMContentLoaded", function() {
         var links = document.querySelectorAll(".sceneLink");
