@@ -1,5 +1,5 @@
 # Inplayszenen-Manager
-Das Inplayszenen-Manager Plugin bietet ein umfassendes Tool zur Verwaltung von Inplayszenen. Es hilft dabei, Szenen übersichtlich zu strukturieren, um so den Überblick über (laufende) Szenen zu behalten. Durch die Nutzung dieses Plugins wird das Erstellen und Verwalten von Szenen wesentlich vereinfacht, indem wichtige Informationen wie Datum, teilnehmende Charaktere und individuelle Felder, welche im ACP nach Bedarf erstellt werden können, erfasst werden. Das Plugin unterstützt und unterscheidet sowohl den normalen Inplaybereich sowie den Bereich für alternative Universen (AU) Szenen. Es besteht die Möglichkeit, Szenen in verschiedene Typen zu unterteilen: private Szenen, in denen nur eingetragene Charaktere teilnehmen dürfen, Szenen, bei denen eine Teilnahme angefragt werden darf, sowie offene Szenen, zu denen sich jeder Charakter mit einem Klick hinzufügen kann. Zusätzlich kann für jede Szene festgelegt werden, ob es sich um eine Szene mit fester Reihenfolge, bei denen die Teilnehmer in einer definierten Reihenfolge posten müssen, oder ohne eine feste Reihenfolge, bei denen das Posten freier erfolgt, handelt. <br>
+Das Inplayszenen-Manager Plugin bietet ein umfassendes Tool zur Verwaltung von Inplayszenen. Es hilft dabei, Szenen übersichtlich zu strukturieren, um so den Überblick über (laufende) Szenen zu behalten. Durch die Nutzung dieses Plugins wird das Erstellen und Verwalten von Szenen wesentlich vereinfacht, indem wichtige Informationen wie Datum, teilnehmende Charaktere und individuelle Felder, welche im ACP nach Bedarf erstellt werden können, erfasst werden. Das Plugin unterstützt und unterscheidet sowohl den normalen Inplaybereich sowie den Bereich für alternative Universen (AU) Szenen. Es besteht die Möglichkeit, Szenen in verschiedene Typen zu unterteilen: private Szenen, in denen nur eingetragene Charaktere teilnehmen dürfen, Szenen, bei denen eine Teilnahme angefragt werden kann, offene Szenen, zu denen sich jeder Charakter mit einem Klick hinzufügen kann, sowie versteckte/geheime Szenen, deren Inhalte nur von den teilnehmenden Charakteren (und deren Zweitaccounts) sowie dem Team gelesen werden können. Diese Option für versteckte Szenen kann individuell aktiviert werden, selbst wenn andere Szenentypen nicht verwendet werden sollen. Zusätzlich kann für jede Szene festgelegt werden, ob es sich um eine Szene mit fester Reihenfolge, bei denen die Teilnehmer in einer definierten Reihenfolge posten müssen, oder ohne eine feste Reihenfolge, bei denen das Posten freier erfolgt, handelt. <br>
 <br>
 Im Profil jedes Charakters werden alle bisherigen Szenen chronologisch aufgelistet. Hierbei wird zwischen Inplay- und AU-Szenen unterschieden, um eine klare Trennung zu schaffen. Szenen, in denen nach einer Charakterlöschung nur noch ein bestehender Charakter vorhanden ist, können als "nicht relevant" markiert werden, um die Übersichtlichkeit zu wahren, ohne die Szene komplett löschen zu müssen.<br>
 <br>
@@ -12,6 +12,7 @@ Bei Account-Löschung werden betroffene Inplayszenen entsprechend in das Archiv 
 - <b>Individuelle Szenenfelder:</b> Im Admin-CP können benutzerdefinierte Felder für die Szenen erstellt werden (z.B. für Ort, Tageszeit).
 - <b>Inplay- und AU-Kategorisierung:</b> Das Plugin trennt Szenen klar nach Inplay- und AU-Bereichen. Zusätzlich können einzelne Foren innerhalb des Inplaybereichs ausgeschlossen werden.
 - <b>Szenenarten:</b> Szenen können privat, nach Absprache oder offen sein, was unterschiedliche Teilnahmebedingungen für die Charaktere ermöglicht (In den Einstellungen aktivierbar). Bei offenen Szenen können sich Mitglieder:innen per Klick mit ihren Charakteren zu der Szene hinzufügen.
+- <b>Versteckte/Geheime Szenen:</b> Versteckte Szenen sind Szenen, deren Inhalte nur von berechtigten Accounts (teilnehmende Charaktere und deren Zweitaccounts) sowie dem Team gelesen werden können. Es kann für das gesamte Forum oder individuell pro Szene festgelegt werden, wie versteckt die Szene sein soll – entweder vollständig, oder so, dass lediglich die Szeneninformationen und das Thema selbst aufgelistet, jedoch die Inhalte nicht lesbar sind.
 - <b>Szeneninformationen im Forumdisplay und Thread:</b> Die Informationen zur Szene werden im Forumdisplay, Showthread und Postbit angezeigt, sofern diese Option aktiviert ist. Es gibt jeweils eine kompakte Variable oder die Felder können jeweils einzeln angesprochen werden.
 - <b>Bearbeitungsmöglichkeiten:</b> Alle in einer Szene eingetragenen Charaktere können die Szeneninformationen nachträglich bearbeiten.
 - <b>Individuelle Szenenübersicht:</b> Jedes Mitglied hat Zugriff auf eine individuelle Übersicht der eigenen aktiven Szenen von den einzelnen Charaktere und kann leicht nachverfolgen, wer als nächstes posten muss.
@@ -35,6 +36,51 @@ Die Feldtypen können frei gewählt werden (ähnlich wie bei den Profilfeldern),
 Der Inplaybereich umfasst die Foren, in denen Mitglieder:innen Szenen eröffnen können, die im aktuellen Inplayzeitraum spielen. Viele Foren bieten darüber hinaus Bereiche für sogenannte Nebenplays an, in denen Szenen aus der Vergangenheit, Zukunft oder sogar alternativen Universen (AU)/"was wäre, wenn..." erstellt werden können. Während Szenen aus Vergangenheit und Zukunft oft noch zum normalen Inplayverlauf des Charakters zählen, sind AU-Szenen eigenständig und nicht Teil des offiziellen Verlaufs.<br>
 Um dies klar zu trennen, bietet das Plugin eine Unterteilung in normalen Inplaybereich und AU-Bereich in den Einstellungen. So kann das Team genau festlegen, welche Foren als Inplay und welche als AU gewertet werden. Selbst wenn der AU-Bereich innerhalb der ausgewählten Inplaykategorie liegt, stellt dies kein Problem dar. Das Plugin erkennt diese Bereiche korrekt und berücksichtigt die Unterscheidung entsprechend.<br>
 Zusätzlich können einzelne Foren innerhalb der ausgewählten Inplaykategorien ausgeschlossen werden. Ein Beispiel wäre der Ausschluss eines Bereichs für SMS oder andere Kommunikationsmittel, die nicht als vollwertige Inplayszenen gelten sollen.
+
+## Deaktivierung von AU-Szenen
+Es besteht die Möglichkeit, AU-Szenen komplett zu deaktivieren, indem in den Einstellungen keine Foren für den AU-Bereich ausgewählt werden. In diesem Fall sollten auch die entsprechenden Templates angepasst werden, um die Anzeige von AU-Szenen zu entfernen.<br>
+<br>
+<b>inplayscenes_memberprofile:</b><br>
+<br>
+```html
+<div class="inplayscenes_memberprofile-auplays">
+    <h3>{$lang->inplayscenes_memberprofile_au}</h3>
+    {$allsideplayscenes}
+</div>
+```
+<br>
+<b>inplayscenes_user_character:</b><br>
+<br>
+
+```html
+<!-- AU Szenen -->
+<div class="inplayscenes_user-scene-category">
+    <div class="tcat">{$scene_counter_sideplay}</div>
+    <div class="inplayscenes_user-scene-table">
+        <div class="inplayscenes_user-scene-row trow2">
+            <div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_next}</strong></div>
+            <div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_info}</strong></div>
+            <div class="inplayscenes_user-scene-col"><strong>{$lang->inplayscenes_user_scene_last}</strong></div>
+        </div>
+        {$au_scene_bit}
+    </div>
+</div>
+```
+
+# Szenentypen
+<b>1. Private Szenen</b><br>
+In private Szenen sind nur für die Charaktere, die beim erstellern der Szene explizit eingetragen wurden. Das bedeutet, dass nur die teilnehmenden Charaktere in der Szene posten dürfen. Diese Szenen sind ideal, wenn die Handlung zwischen einer festgelegten Gruppe von Charakteren ablaufen soll.<br>
+<br>
+<b>2. Szenen mit Anfrage</b><br>
+Bei diesem Szenentyp können weitere Charaktere an der Szene teilnehmen, jedoch nur, wenn ihre Teilnahme zuvor angefragt wurde. Die bisher eingetragenen Accounts haben die Möglichkeit, die Szeneninformationen zu bearbeiten und neue Charaktere hinzuzufügen. Dieser Typ bieten die Gelegenheit, die Handlung für zusätzlichen Input offen zu halten.<br>
+<br>
+<b>3. Offene Szenen</b><br>
+Offene Szenen sind für alle Charaktere frei zugänglich, und jede kann mit einem einfachen Klick an der Szene teilnehmen. Diese Art von Szene ist ideal für spontane Interaktionen. Es ist die flexibelste Option, bei der alle Mitglieder des Forums die Möglichkeit haben, sich ohne weitere Abstimmungen in die Handlung einzubringen.<br>
+<br>
+<b>4. Versteckte/Geheime Szenen</b><br>
+Versteckte oder geheime Szenen bieten die höchste Form der Privatsphäre und Zugriffssteuerung. Nur die teilnehmenden Charaktere, ihre Zweitaccounts und das Team haben die Möglichkeit, die Inhalte der Szene zu sehen und zu lesen. Dieser Szenentyp eignet sich besonders für sensible oder vertrauliche Handlungen. Das Team hat die Möglichkeit, in den Einstellungen festzulegen, wie versteckte Szenen im Forumdisplay und im Profil behandelt werden sollen. Alternativ kann den Mitgliedern die Option eingeräumt werden, individuell für jede Szene selbst zu entscheiden. Es stehen zwei Optionen zur Verfügung, wie diese Szenen im Forum und im Profil angezeigt werden:<br>
+- <b>Komplett versteckt:</b> Die Szene ist vollständig unsichtbar, sowohl im Forum als auch im Profil. Es wird so behandelt, als würde das Thema gar nicht existieren – es erscheint nicht in der Themenliste, wird nicht in der Themen- oder Beitragsstatistik gezählt, und ist auch nicht im Profil der beteiligten Charaktere aufgelistet. Nur die berechtigten Accounts und das Team sehen diese Szene.
+- <b>Teilweise versteckt (nur lesbar):</b> Die Szene und ihre grundlegenden Informationen (wie Titel, Datum, Charaktere, etc.) werden in der Themenübersicht und im Profil angezeigt. Beim Versuch, die Szene zu öffnen, wird jedoch eine Benachrichtigung angezeigt, dass man keine Berechtigung hat, die Inhalte zu lesen. Dadurch bleibt der Inhalt verborgen, während die Existenz der Szene bekannt bleibt.
 
 # Szeneninformationen im Forumdisplay und Thread
 Das Plugin bietet die Möglichkeit, Szeneninformationen in verschiedenen Bereichen des Forums anzuzeigen: im Forumdisplay (Template "forumdisplay_thread"), im Showthread (Template "showthread") sowie im Postbit (Templates "postbit" und "postbit_classic"). Während die Anzeige im Forumdisplay standardmäßig aktiviert ist, müssen die Optionen für Showthread und Postbit über die Einstellungen separat aktiviert werden.<br>
@@ -98,6 +144,22 @@ In dieser Ansicht erfolgt die Unterteilung in aktive und beendete Szenen. Die Va
 3. <b>Reine Auflistung ohne Unterteilung/Gruppierung:</b><br>
 Für eine einfache, ungegliederte Auflistung aller Szenen kann die Variable <b>{$all_inplplayscenes}</b> verwendet werden.
 
+# Übertragung von Inplayszenen aus anderen Systemen
+Falls euer Forum zuvor einen anderen Tracker für Inplayszenen genutzt hat, bietet dieses Plugin eine einfache Möglichkeit, bestehende Szenen in das neue System zu übertragen. Aktuell werden Übertragungen aus folgenden Trackern unterstützt:
+- <a href="https://github.com/its-sparks-fly/Inplaytracker-2.0">Inplaytracker 2.0 von sparks fly</a>
+- <a href="https://github.com/ItsSparksFly/mybb-inplaytracker">Inplaytracker 3.0 von sparks fly</a>
+- <a href="https://github.com/katjalennartz/scenetracker">Szenentracker von risuena</a>
+<br>
+Um die Übertragung durchzuführen, gehe wie folgt vor:<br>
+<br>
+1. <b>Navigieren zum Übertragungsseite:</b><br>Im ACP findest du im Modul "RPG Erweiterungen" den Menüpunkt "Inplayszenen übertragen". Klicke auf diesen Punkt, um die Übertragungsseite zu öffnen.<br><br>
+2. <b>Auswahl des alten Trackersystems:</b><br>Auf der Übertragungsseite kannst du den Tracker auswählen, von dem du die Daten übertragen möchtest. Wähle den entsprechenden Tracker und fahre fort.<br><br>
+3. <b>Übertragungsprozess abschließen:</b><br>Nachdem du den Tracker ausgewählt hast, beginnt der Übertragungsprozess. Alle relevanten Daten (Szenen, Charaktere, Szenenfelder, etc.) werden automatisch in die neue Datenbanktabelle übernommen. Sobald die Übertragung abgeschlossen ist, erhältst du eine Bestätigung. Bei Problemen immer im SG-Supportthema melden!<br><br>
+4. <b>Altes Trackersystem deinstallieren:</b><br>Nachdem die Übertragung erfolgreich durchgeführt wurde (überprüfe es vorher einmal, ob die Zahlen stimmen), kannst du das alte Trackersystem gefahrlos deinstallieren, da alle Daten jetzt in das neue Plugin übertragen wurden.<br>
+<br>
+<b>Wichtiger Hinweis:</b><br>
+Die Übertragung der Inplayszenen muss erfolgen, <b>bevor neue Szenen erstellt werden</b>!
+
 # Datenbank-Änderungen
 hinzugefügte Tabelle:
 - inplayscenes
@@ -127,7 +189,7 @@ hinzugefügte Spalten in der Tabelle <b>users</b>:
 - Szeneninformationen: Postbit
 - Übersicht aller Inplayszenen
 - Anzeige vom nächster Poster
-- Spielername
+- Spitzname
 - Monatsanzeige
 - farbige Usernamen
 - inaktive Szenen<br>
@@ -153,7 +215,6 @@ Das Plugin ist kompatibel mit den klassischen Profilfeldern von MyBB und/oder de
 - inplayscenes_newthread
 - inplayscenes_newthread_fields
 - inplayscenes_overview
-- inplayscenes_overview_openscene_filter
 - inplayscenes_overview_scene
 - inplayscenes_overview_scene_fields
 - inplayscenes_overview_scene_none
@@ -737,3 +798,74 @@ foreach ($characters_uids as $key => $uid) {
 }
 $usernames = implode(" &nbsp; &nbsp; ", $characters);
 ```
+# PHP-Codes für Statistiken
+### <a href="https://storming-gates.de/showthread.php?tid=1013891&pid=470220#pid470220">RPG-Statistiken - User im Forum, Inplayposts und -szenen</a> von <a href="https://storming-gates.de/member.php?action=profile&uid=176">aheartforspinach</a>
+<b>Drückt den Danke-Button in dem Thema!</b><br>
+suche nach folgender Stelle:
+```php
+$query = $db->simple_select('ipt_scenes', 'tid');
+```
+ersetze es durch:
+```php
+$query = $db->simple_select('inplayscenes', 'tid');
+```
+### Inplayszenen und -posts im Profil/Mitgliederliste/Postbit
+<b>Profil</b><br>
+such in <b>member.php</b> nach:
+```php
+$plugins->run_hooks("member_profile_start");
+```
+füge danach ein:
+```php
+$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplaysceness WHERE concat(',',partners,',') LIKE '%,".$memprofile['uid'].",%');
+$inplayscenes_count = $db->num_rows($scene_query);
+$inplayposts_count = 0;
+while ($scene = $db->fetch_array($scene_query)) {
+    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid']);
+    $post_data = $db->fetch_array($posts);
+    $inplayposts_count += $post_data['post_count'];
+}
+```
+<b>Variablen:</b><br>
+Inplayszenen: {$inplayscenes_count}<br>
+Inplayposts: {$inplayposts_count}<br>
+
+<br><b>Mitgliederliste</b><br>
+such in <b>memberlist.php</b> nach:
+```php
+$user = $plugins->run_hooks("memberlist_user", $user);
+```
+füge danach ein:
+```php
+$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplaysceness WHERE concat(',',partners,',') LIKE '%,".$user['uid'].",%');
+$user['inplayscenes_count'] = $db->num_rows($scene_query);
+$inplayposts = 0;
+while ($scene = $db->fetch_array($scene_query)) {
+    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid']);
+    $post_data = $db->fetch_array($posts);
+    $user['inplayposts_count'] += $post_data['post_count'];
+}
+```
+<b>Variablen:</b><br>
+Inplayszenen: {$user['inplayscenes_count']}<br>
+Inplayposts: {$user['inplayposts_count']}<br>
+
+<br><b>Postbit</b><br>
+such in <b>inc/functions_post.php</b> nach:
+```php
+if($mybb->settings['postlayout'] == "classic")
+```
+füge davor ein:
+```php
+$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplaysceness WHERE concat(',',partners,',') LIKE '%,".$post['uid'].",%');
+$post['inplayscenes_count'] = $db->num_rows($scene_query);
+$inplayposts = 0;
+while ($scene = $db->fetch_array($scene_query)) {
+    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid']);
+    $post_data = $db->fetch_array($posts);
+    $post['inplayposts_count'] += $post_data['post_count'];
+}
+```
+<b>Variablen:</b><br>
+Inplayszenen: {$post['inplayscenes_count']}<br>
+Inplayposts: {$post['inplayposts_count']}<br>
