@@ -798,6 +798,91 @@ foreach ($characters_uids as $key => $uid) {
 }
 $usernames = implode(" &nbsp; &nbsp; ", $characters);
 ```
+# <a href="https://storming-gates.de/showthread.php?tid=1015591&pid=480982#pid480982">Spielerübersicht mit Statistiken</a> von sparks fly
+suche nach:
+```php
+$userids_string = implode(",", $userids);
+```
+füge danach ein:
+```php
+$sceneTIDs = "";
+foreach ($userids as $userID) {
+    // Szenen des Users auslesen - TID
+    $query_allcharscenes = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes
+    WHERE (concat(',',partners,',') LIKE '%,".$userID.",%')
+    ORDER by tid ASC    
+    ");     
+
+    while ($allcharscenes = $db->fetch_array($query_allcharscenes)){
+        // Mit Infos füllen
+        $sceneTIDs .= $allcharscenes['tid'].",";
+    }   
+}
+if(!empty($sceneTIDs)) {
+    // letztes Komma abschneiden 
+    $sceneTIDs_string = substr($sceneTIDs, 0, -1);
+    // TIDs splitten
+    $sceneTIDs_array = explode(",", $sceneTIDs_string);
+} else {
+    $sceneTIDs_string = 0;
+    $sceneTIDs_array = 0;
+}
+```
+suche nach:
+```php
+$query = "
+    SELECT COUNT(*) AS numposts FROM ".TABLE_PREFIX."posts p
+    INNER JOIN ".TABLE_PREFIX."threads th ON
+    th.tid = p.tid
+    WHERE p.uid IN($userids_string)
+    AND p.tid IN (SELECT tid FROM ".TABLE_PREFIX."ipt_scenes)
+";
+```
+ersetze es durch:
+```php
+$query = "
+    SELECT COUNT(*) AS numposts FROM ".TABLE_PREFIX."posts p
+    INNER JOIN ".TABLE_PREFIX."threads th ON
+    th.tid = p.tid
+    WHERE p.uid IN($userids_string)
+    AND p.tid IN ($sceneTIDs_string)
+";
+```
+such nach:
+```php
+$query = "
+    SELECT COUNT(*) AS numthreads FROM ".TABLE_PREFIX."ipt_scenes_partners isp
+    WHERE isp.uid IN($userids_string)
+";
+```
+ersetze es durch:
+```php
+$query = "
+    SELECT COUNT(*) AS numthreads FROM ".TABLE_PREFIX."threads th
+    WHERE th.tid IN ($sceneTIDs_string)
+";
+```
+suche nach:
+```php
+$query = "
+    SELECT sum(length(message)) AS numchars FROM ".TABLE_PREFIX."posts p
+    INNER JOIN ".TABLE_PREFIX."threads th ON
+    th.tid = p.tid
+    WHERE p.uid IN($userids_string)
+    AND p.tid IN (SELECT tid FROM ".TABLE_PREFIX."ipt_scenes)
+";
+```
+ersetze es durch:
+```php
+$query = "
+    SELECT sum(length(message)) AS numchars FROM ".TABLE_PREFIX."posts p
+    INNER JOIN ".TABLE_PREFIX."threads th ON
+    th.tid = p.tid
+    WHERE p.uid IN($userids_string)
+    AND p.tid IN ($sceneTIDs_string)
+";
+```
+
 # PHP-Codes für Statistiken
 ### <a href="https://storming-gates.de/showthread.php?tid=1013891&pid=470220#pid470220">RPG-Statistiken - User im Forum, Inplayposts und -szenen</a> von <a href="https://storming-gates.de/member.php?action=profile&uid=176">aheartforspinach</a>
 <b>Drückt den Danke-Button in dem Thema!</b><br>
