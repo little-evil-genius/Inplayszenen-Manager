@@ -908,7 +908,7 @@ $inplayposts_count = 0;
 while ($scene = $db->fetch_array($scene_query)) {
     $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid'].' and uid = '.$memprofile['uid']);
     while ($post_data = $db->fetch_array($posts)){
-        $user['inplayposts_count']++;
+        $inplayposts_count++;
     }
 }
 ```
