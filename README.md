@@ -902,13 +902,14 @@ $plugins->run_hooks("member_profile_start");
 ```
 füge danach ein:
 ```php
-$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplaysceness WHERE concat(',',partners,',') LIKE '%,".$memprofile['uid'].",%');
+$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes WHERE concat(',',partners,',') LIKE '%,".$memprofile['uid'].",%'");
 $inplayscenes_count = $db->num_rows($scene_query);
 $inplayposts_count = 0;
 while ($scene = $db->fetch_array($scene_query)) {
-    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid']);
-    $post_data = $db->fetch_array($posts);
-    $inplayposts_count += $post_data['post_count'];
+    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid'].' and uid = '.$memprofile['uid']);
+    while ($post_data = $db->fetch_array($posts)){
+        $user['inplayposts_count']++;
+    }
 }
 ```
 <b>Variablen:</b><br>
@@ -922,13 +923,14 @@ $user = $plugins->run_hooks("memberlist_user", $user);
 ```
 füge danach ein:
 ```php
-$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplaysceness WHERE concat(',',partners,',') LIKE '%,".$user['uid'].",%');
+$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes WHERE concat(',',partners,',') LIKE '%,".$user['uid'].",%'");
 $user['inplayscenes_count'] = $db->num_rows($scene_query);
-$inplayposts = 0;
+$user['inplayposts_count'] = 0;
 while ($scene = $db->fetch_array($scene_query)) {
-    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid']);
-    $post_data = $db->fetch_array($posts);
-    $user['inplayposts_count'] += $post_data['post_count'];
+    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid'].' and uid = '.$user['uid']);
+    while ($post_data = $db->fetch_array($posts)){
+        $user['inplayposts_count']++;
+    }
 }
 ```
 <b>Variablen:</b><br>
@@ -938,17 +940,18 @@ Inplayposts: {$user['inplayposts_count']}<br>
 <br><b>Postbit</b><br>
 such in <b>inc/functions_post.php</b> nach:
 ```php
-if($mybb->settings['postlayout'] == "classic")
+$post = $plugins->run_hooks("postbit", $post);
 ```
-füge davor ein:
+füge danach ein:
 ```php
-$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplaysceness WHERE concat(',',partners,',') LIKE '%,".$post['uid'].",%');
+$scene_query = $db->query("SELECT tid FROM ".TABLE_PREFIX."inplayscenes WHERE concat(',',partners,',') LIKE '%,".$post['uid'].",%'");
 $post['inplayscenes_count'] = $db->num_rows($scene_query);
-$inplayposts = 0;
+$post['inplayposts_count'] = 0;
 while ($scene = $db->fetch_array($scene_query)) {
-    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid']);
-    $post_data = $db->fetch_array($posts);
-    $post['inplayposts_count'] += $post_data['post_count'];
+    $posts = $db->simple_select('posts', 'message, tid', 'visible = 1 and tid = '. $scene['tid'].' and uid = '.$post['uid']);
+    while ($post_data = $db->fetch_array($posts)){
+        $post['inplayposts_count']++;
+    }
 }
 ```
 <b>Variablen:</b><br>
