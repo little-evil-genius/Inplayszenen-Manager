@@ -8574,31 +8574,8 @@ function inplayscenes_is_updated(){
 
     global $db, $mybb;
 
-    $templates[] = array(
-        'title'		=> 'inplayscenes_error_hidenscenes',
-        'template'	=> $db->escape_string('{$lang->inplayscenes_hide_nopermission_1}
-        <ol>
-        <li>{$lang->inplayscenes_hide_nopermission_2}</li>
-        <li>{$lang->inplayscenes_hide_nopermission_3}</li>
-        <li>{$lang->inplayscenes_hide_nopermission_4}</li>
-        </ol>'),
-        'sid'		=> '-2',
-        'version'	=> '',
-        'dateline'	=> TIME_NOW
-    );
-
-    foreach ($templates as $template) {
-        $query = $db->simple_select("templates", "tid, template", "title = '".$template['title']."' AND sid = '-2'");
-        $existing_template = $db->fetch_array($query);
-
-        if ($existing_template['template'] !== $template['template']) {
-            return false;
-        }
+    if ($db->field_exists("hideprofile", "inplayscenes") && $db->field_exists("scenetype", "inplayscenes")) {
+        return true;
     }
-    return true;
-
-    // if ($db->field_exists("hideprofile", "inplayscenes") && $db->field_exists("scenetype", "inplayscenes")) {
-    //     return true;
-    // }
-    // return false;
+    return false;
 }
