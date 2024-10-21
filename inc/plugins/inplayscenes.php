@@ -4438,7 +4438,6 @@ function inplayscenes_misc() {
             } else {
                 $scenetype_select = "-1";
             }
-            echo $scenetype_select;
             $scenetype_multipage = "&scenetype=".$scenetype;
 
             // Szeneneinstellung-Filter
