@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0",
+		"version"	=> "1.0.1",
 		"compatibility" => "18*"
 	);
 }
@@ -4638,8 +4638,8 @@ function inplayscenes_misc() {
         $end = $start + $perpage;
         $lower = $start+1;
         $upper = $end;
-        if($upper > $all_scenes) {
-            $upper = $all_scenes;
+        if($upper > $all_scenes_filter) {
+            $upper = $all_scenes_filter;
         }
         
         $scenestatus_multipage = "&scenestatus=".$scenestatus;
@@ -4650,7 +4650,7 @@ function inplayscenes_misc() {
 
         $page_url = htmlspecialchars_uni("misc.php?action=all_inplayscenes".$scenestatus_multipage.$area_multipage.$postorder_multipage.$scenetype_multipage.$charactername_multipage.$playername_multipage);
 
-        $multipage = multipage($all_scenes, $perpage, $input_page, $page_url);
+        $multipage = multipage($all_scenes_filter, $perpage, $input_page, $page_url);
         $multipage_sql = "LIMIT ".$start.", ".$perpage;
         
         $scenes_query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
