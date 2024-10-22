@@ -2257,9 +2257,6 @@ function inplayscenes_do_editpost() {
     // Sprachdatei laden
     $lang->load('inplayscenes');
 
-    // Mögliche gespeicherte Entwürfe löschen
-    $db->delete_query("inplayscenes", "tid = '".$mybb->get_input('tid', MyBB::INPUT_INT)."'");
-
     // SPEICHERN
     $characters = explode(",", $mybb->get_input('characters'));
     $characters = array_map("trim", $characters);	
