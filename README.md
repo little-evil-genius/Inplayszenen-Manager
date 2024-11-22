@@ -660,35 +660,21 @@ if ($db->table_exists("ipt_scenes")) {
 ersetze es durch:
 ```php
 $szenen = false;
-if ($db->table_exists("ipt_scenes")) {
-	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
-	if (mysqli_num_rows($query) > 0) {
-		$threadlist = "";
-		while ($szenenliste = $db->fetch_array($query)) {
-			$thread = get_thread($szenenliste['tid']);
-			if ($thread) {
-				$szenen = true;
-				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
-			} else {}
-		}
-	} else {
-		$threadlist = "";
-	}
-} elseif ($db->table_exists('inplayscenes')) {
-	$date_db = date('Y-m-d', $date);
-	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
-	if (mysqli_num_rows($query) > 0) {
-		$threadlist = "";
-		while ($szenenliste = $db->fetch_array($query)) {
-			$thread = get_thread($szenenliste['tid']);
-			if ($thread) {
-				$szenen = true;
-				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
-			} else {}
-		}
-	} else {
-		$threadlist = "";
-	}
+if ($db->table_exists('inplayscenes')) {
+    $date_db = date('Y-m-d', $date);
+    $query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
+    if (mysqli_num_rows($query) > 0) {
+        $threadlist = "";
+        while ($szenenliste = $db->fetch_array($query)) {
+            $thread = get_thread($szenenliste['tid']);
+            if ($thread) {
+                $szenen = true;
+                $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
+            } else {}
+        }
+    } else {
+        $threadlist = "";
+    }
 }
 ```
 
@@ -713,38 +699,23 @@ if ($db->table_exists("ipt_scenes")) {
 ```
 ersetze es durch:
 ```php
-if ($db->table_exists("ipt_scenes")) {
-	$szenen = false;
-	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
-	if (mysqli_num_rows($query) > 0) {
-		$threadlist = "";
-		while ($szenenliste = $db->fetch_array($query)) {
-			$thread = get_thread($szenenliste['tid']);
-			if ($thread) {
-				$szenen = true;
-				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
-			} else {}
-		}
-	} else {
-		$threadlist = "";
-	}
-} elseif ($db->table_exists('inplayscenes')) {
-	$date_db = date('Y-m-d', $date);
-	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
-	$szenen = false;
-	if (mysqli_num_rows($query) > 0) {
-		$threadlist = "";
-		while ($szenenliste = $db->fetch_array($query)) {
-			$thread = get_thread($szenenliste['tid']);
-			if ($thread) {
-				$szenen = true;
-				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
-			} else {}
-		}
-	} else {
-		$threadlist = "";
-	}
-}
+if ($db->table_exists('inplayscenes')) {
+    $date_db = date('Y-m-d', $date);
+    $query = $db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes WHERE date = '$date_db'");
+    $szenen = false;
+    if (mysqli_num_rows($query) > 0) {
+        $threadlist = "";
+        while ($szenenliste = $db->fetch_array($query)) {
+            $thread = get_thread($szenenliste['tid']);
+            if ($thread) {
+                $szenen = true;
+                $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />";
+            } else {}
+        }
+    } else {
+        $threadlist = "";
+    }
+} 
 ```
 ### <a href="https://github.com/ItsSparksFly/mybb-plottracker/tree/inplaytracker30">Plottracker</a> von <a href="https://github.com/ItsSparksFly">ItsSparksFly</a>
 suche nach folgender Stelle in inc/plugins/plottracker.php:
