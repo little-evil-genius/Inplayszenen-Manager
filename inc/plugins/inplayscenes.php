@@ -3201,7 +3201,7 @@ function inplayscenes_postvariables(&$post) {
 // SHOWTHREAD
 function inplayscenes_showthread_start() {
 	
-	global $mybb, $templates, $thread, $lang, $db, $display_offplay, $display_onlyinplay, $inplayscenes_showthread, $inplayscenes_edit, $inplayscenes_add, $inplayscenes_relevant, $inplayscenes_pdf;
+	global $mybb, $templates, $thread, $lang, $db, $display_offplay, $display_onlyinplay, $inplayscenes_showthread, $inplayscenes_edit, $inplayscenes_add, $inplayscenes_relevant, $inplayscenes_pdf, $inplayscene;
 
     // EINSTELLUNGEN
     $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
