@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.2",
+		"version"	=> "1.0.3",
 		"compatibility" => "18*"
 	);
 }
@@ -3214,6 +3214,7 @@ function inplayscenes_showthread_start() {
     $month_setting = $mybb->settings['inplayscenes_months'];
     $color_setting = $mybb->settings['inplayscenes_groupcolor'];
     $hide_setting = $mybb->settings['inplayscenes_hide'];
+    $scenesedit_setting = $mybb->settings['inplayscenes_scenesedit'];
 
     // CSS Variable zum Verstecken 
     $display_offplay = "";
@@ -3242,23 +3243,53 @@ function inplayscenes_showthread_start() {
     if (!in_array($fid, $relevant_forums)) return;
 
     // Buttons
-    $partnersUID = explode(",", $db->fetch_field($db->simple_select("inplayscenes", "partners", "tid = '".$tid."'"), "partners"));
-    if (in_array($mybb->user['uid'], $partnersUID) AND $mybb->user['uid'] != 0) {
-        $inplayscenes_add = "";
-        eval("\$inplayscenes_edit = \"" . $templates->get("inplayscenes_showthread_edit") . "\";");
-    } else  {
-        $inplayscenes_edit = "";
-
-        if ($scenetype_setting == 1 AND $mybb->user['uid'] != 0) {
-            $scenetype = $db->fetch_field($db->simple_select("inplayscenes", "scenetype", "tid = '".$tid."'"), "scenetype");
-
-            if ($scenetype == 2) {
-                eval("\$inplayscenes_add = \"" . $templates->get("inplayscenes_showthread_add") . "\";");
+    $partnersUID = explode(",", $db->fetch_field($db->simple_select("inplayscenes", "partners", "tid = '".$tid."'"), "partners"));    
+    if ($scenesedit_setting == 0) {
+        if (in_array($mybb->user['uid'], $partnersUID) AND $mybb->user['uid'] != 0) {
+            $inplayscenes_add = "";
+            eval("\$inplayscenes_edit = \"" . $templates->get("inplayscenes_showthread_edit") . "\";");
+        } else  {
+            $inplayscenes_edit = "";
+    
+            if ($scenetype_setting == 1 AND $mybb->user['uid'] != 0) {
+                $scenetype = $db->fetch_field($db->simple_select("inplayscenes", "scenetype", "tid = '".$tid."'"), "scenetype");
+    
+                if ($scenetype == 2) {
+                    eval("\$inplayscenes_add = \"" . $templates->get("inplayscenes_showthread_add") . "\";");
+                } else {
+                    $inplayscenes_add = "";
+                }
             } else {
                 $inplayscenes_add = "";
             }
-        } else {
+        }
+    } else {
+        $userids_array = inplayscenes_get_allchars($mybb->user['uid']); 
+        $hasEditPermission = false;
+
+        foreach ($userids_array as $uid => $username) {
+            if (in_array($uid, $partnersUID)) {
+                $hasEditPermission = true;
+                break;
+            }
+        }
+
+        if ($hasEditPermission && $mybb->user['uid'] != 0) {
+            eval("\$inplayscenes_edit = \"" . $templates->get("inplayscenes_showthread_edit") . "\";");
             $inplayscenes_add = "";
+        } else {
+            $inplayscenes_edit = "";
+            if ($scenetype_setting == 1 && $mybb->user['uid'] != 0) {
+                $scenetype = $db->fetch_field($db->simple_select("inplayscenes", "scenetype", "tid = '".$tid."'"), "scenetype");
+
+                if ($scenetype == 2) {
+                    eval("\$inplayscenes_add = \"" . $templates->get("inplayscenes_showthread_add") . "\";");
+                } else {
+                    $inplayscenes_add = "";
+                }
+            } else {
+                $inplayscenes_add = "";
+            }
         }
     }
 
@@ -4010,6 +4041,7 @@ function inplayscenes_misc() {
     $hide_setting = $mybb->settings['inplayscenes_hide'];
     $hidetype_setting = $mybb->settings['inplayscenes_hidetype'];
     $hideprofile_setting = $mybb->settings['inplayscenes_hideprofile'];
+    $scenesedit_setting = $mybb->settings['inplayscenes_scenesedit'];
 
     require_once MYBB_ROOT."inc/class_parser.php";
             
@@ -4930,9 +4962,25 @@ function inplayscenes_misc() {
 
         $tid =  $mybb->get_input('tid', MyBB::INPUT_INT);
 
-        $partnersUID = explode(",", $db->fetch_field($db->simple_select("inplayscenes", "partners", "tid = '".$tid."'"), "partners"));
-        if (!in_array($mybb->user['uid'], $partnersUID)) {
-            error_no_permission();
+        if ($scenesedit_setting == 0) {
+            $partnersUID = explode(",", $db->fetch_field($db->simple_select("inplayscenes", "partners", "tid = '".$tid."'"), "partners"));
+            if (!in_array($mybb->user['uid'], $partnersUID)) {
+                error_no_permission();
+            }
+        } else {
+            $partnersUID = explode(",", $db->fetch_field($db->simple_select("inplayscenes", "partners", "tid = '".$tid."'"), "partners"));
+            $hasPermission = false;
+
+            foreach ($userids_array as $uid => $username) {
+                if (in_array($uid, $partnersUID)) {
+                    $hasPermission = true;
+                    break;
+                }
+            }
+
+            if (!$hasPermission) {
+                error_no_permission();
+            }
         }
 
         if(!isset($inplayscenes_edit_error)){
@@ -7179,12 +7227,19 @@ function inplayscenes_settings($type = 'install') {
             'value' => '1', // Default
             'disporder' => 17
         ),
+        'inplayscenes_scenesedit' => array(
+            'title' => 'Szeneninformationen bearbeiten',
+            'description' => 'Können die User die Szeneninformationen ihrer Szenen über den Button im Showthread mit allen angehängten Accounts bearbeiten?<br>Sonst können sie das nur mit dem Account, der in dieser Szene eingetragen ist.',
+            'optionscode' => 'yesno',
+            'value' => '0', // Default
+            'disporder' => 18
+        ),
         'inplayscenes_inactive_scenes' => array(
             'title' => 'inaktive Szenen',
             'description' => 'Ab wie vielen Monaten, ohne Post gelten Szenen als inaktiv? Inaktive Szenen werden automatisch ins Archiv verschoben. AU-Szenen sind nicht davon betroffen. (0 = schließt die Funktion aus)',
             'optionscode' => 'numeric',
             'value' => '0', // Default
-            'disporder' => 18
+            'disporder' => 19
         ),
     );
 
@@ -7203,12 +7258,12 @@ function inplayscenes_settings($type = 'install') {
         // Einzeln durchgehen 
         foreach ($setting_array as $name => $setting) {
             $setting['name'] = $name;
-            $check = $db->write_query("SELECT name FROM ".TABLE_PREFIX."settings WHERE name = '".$name."'"); // Überprüfen, ob sie vorhanden ist
+            $check = $db->write_query("SELECT name FROM ".TABLE_PREFIX."settings WHERE name = '".$name."'"); 
             $check = $db->num_rows($check);
             $setting['gid'] = $gid;
-            if ($check == 0) { // nicht vorhanden, hinzufügen
+            if ($check == 0) { 
               $db->insert_query('settings', $setting);
-            } else { // vorhanden, auf Änderungen überprüfen
+            } else { 
                 
                 $current_setting = $db->fetch_array($db->write_query("SELECT title, description, optionscode, disporder FROM ".TABLE_PREFIX."settings 
                 WHERE name = '".$db->escape_string($name)."'
@@ -8599,7 +8654,7 @@ function inplayscenes_is_updated(){
 
     global $db, $mybb;
 
-    if ($db->field_exists("hideprofile", "inplayscenes") && $db->field_exists("scenetype", "inplayscenes")) {
+    if(isset($mybb->settings['inplayscenes_scenesedit'])){
         return true;
     }
     return false;
