@@ -680,22 +680,20 @@ if ($db->table_exists('inplayscenes')) {
 
 suche nach folgender Stelle in inplaykalender.php
 ```php
-if ($db->table_exists("ipt_scenes")) {
-	$szenen = false;
-	$query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
-	if (mysqli_num_rows($query) > 0) {
-		$threadlist = "";
-		while ($szenenliste = $db->fetch_array($query)) {
-			$thread = get_thread($szenenliste['tid']);
-			if ($thread) {
-				$szenen = true;
-				$threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
-			} else {}
-		}
-	} else {
-		$threadlist = "";
-	}
-}
+if($db->table_exists("ipt_scenes")) {
+                $szenen = false;
+                $query = $db->query("SELECT * FROM ".TABLE_PREFIX."ipt_scenes WHERE date = '$date'");
+                if(mysqli_num_rows($query) > 0) {
+                        $threadlist = "";
+                        while($szenenliste = $db->fetch_array($query)) {
+                            $thread = get_thread($szenenliste['tid']);
+                            if($thread) {
+                                $szenen = true;
+                                $threadlist .= "&bull; <a href=\"showthread.php?tid={$thread['tid']}\" target=\"_blank\">{$thread['subject']}</a><br />{$szenenliste['shortdesc']}<br />";
+                            } else {  }
+                    } 
+                } else { $threadlist = ""; }
+            }
 ```
 ersetze es durch:
 ```php
