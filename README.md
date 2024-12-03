@@ -192,6 +192,7 @@ hinzugefügte Spalten in der Tabelle <b>users</b>:
 - Spitzname
 - Monatsanzeige
 - farbige Usernamen
+- Szeneninformationen bearbeiten
 - inaktive Szenen<br>
 <br>
 <b>HINWEIS:</b><br>
