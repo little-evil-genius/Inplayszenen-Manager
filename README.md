@@ -763,7 +763,7 @@ foreach ($characters_uids as $key => $uid) {
 		$formattedname = build_profile_link($username, $uid);
 		$characters[] = $formattedname;
 	} else {
-		$characters = $usernames[$key];
+		$characters[] = $usernames[$key];
 	}
 }
 $usernames = implode(" &nbsp; &nbsp; ", $characters);
