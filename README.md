@@ -595,11 +595,7 @@ if ($db->table_exists('ipt_scenes_partners')) {
 		$partners[] = $partner['uid'];
 	}
 } elseif ($db->table_exists('inplayscenes')) {
-	$partnerNames = explode(",", $query);
-
-	foreach ($partnerNames as $partnerName) {
-		$partners[] = $partner['uid'];
-	}
+	$partners = explode(",", $query);
 }
 ```
 ### <a href="https://github.com/aheartforspinach/Whitelist">Whitelist</a> von <a href="https://github.com/aheartforspinach">aheartforspinach</a>
