@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.3",
+		"version"	=> "1.0.4",
 		"compatibility" => "18*"
 	);
 }
@@ -3751,6 +3751,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_inplay).")
     AND relevant != 0
+    AND visible = 1
     ".$remove_sql."
     ORDER BY i.date DESC
     ");
@@ -3904,6 +3905,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_inplay).")
     AND relevant != 0
+    AND visible = 1
     ".$remove_sql."
     ORDER BY i.date DESC
     ");
@@ -3924,6 +3926,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_active_inplay).")
     AND relevant != 0
+    AND visible = 1
     ".$remove_sql."
     ORDER BY i.date DESC
     ");
@@ -3944,6 +3947,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_archive_inplay).")
     AND relevant != 0
+    AND visible = 1
     ".$remove_sql."
     ORDER BY i.date DESC
     ");
@@ -3963,6 +3967,7 @@ function inplayscenes_memberprofile() {
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND fid IN (".implode(',', $relevant_forums_sideplay).")
     AND relevant != 0
+    AND visible = 1
     ".$remove_sql."
     ");
 
@@ -3980,6 +3985,7 @@ function inplayscenes_memberprofile() {
     ON (i.tid = t.tid) 
     WHERE (concat(',',i.partners,',') LIKE '%,".$profileUID.",%')
     AND relevant != 1
+    AND visible = 1
     ".$remove_sql."
     ");
 
@@ -4167,6 +4173,7 @@ function inplayscenes_misc() {
             ON (i.tid = t.tid) 
             WHERE (concat(',',i.partners,',') LIKE '%,".$charaID.",%')
             AND fid IN (".implode(',', $active_forums).")
+            AND visible = 1
             ".$order_by_clause."
             ");
             
@@ -4644,12 +4651,14 @@ function inplayscenes_misc() {
         // COUNTER
         $all_scenes = $db->num_rows($db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
         LEFT JOIN ".TABLE_PREFIX."threads t 
-        ON (i.tid = t.tid) 
+        ON (i.tid = t.tid)  
+        WHERE visible = 1
         "));
         $all_scenes_filter = $db->num_rows($db->query("SELECT * FROM ".TABLE_PREFIX."inplayscenes i 
         LEFT JOIN ".TABLE_PREFIX."threads t ON (i.tid = t.tid) 
         ".$where_sql."
         ".$remove_sql."
+        AND visible = 1
         "));
 
         $scene_counter = $lang->sprintf($lang->inplayscenes_overview_counter, $all_scenes_filter, $all_scenes, $hide_counter);
@@ -4686,6 +4695,7 @@ function inplayscenes_misc() {
         LEFT JOIN ".TABLE_PREFIX."threads t ON (i.tid = t.tid) 
         ".$where_sql."
         ".$remove_sql."
+        AND visible = 1
         ".$order_by_sql."
         ".$multipage_sql."
         ");
@@ -5450,6 +5460,7 @@ function inplayscenes_misc() {
             LEFT JOIN ".TABLE_PREFIX."inplayscenes i
             ON (i.tid = t.tid) 
             WHERE t.tid IN (".$relevant_tids.")
+            AND visible = 1
             ORDER BY t.lastpost ASC
             ");
     
@@ -6727,6 +6738,7 @@ function inplayscenes_openSceneReminder($userids_array, $mode = 'count') {
             ON (i.tid = t.tid) 
             WHERE (concat(',', i.partners, ',') LIKE '%,".$userID.",%')
             AND t.fid IN (".implode(',', $relevant_forums).")
+            AND t.visible = 1
         ");
 
         $total_scenes_for_user = $db->num_rows($allinplayscenes_query);
