@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.4",
+		"version"	=> "1.0.5",
 		"compatibility" => "18*"
 	);
 }
@@ -1791,6 +1791,8 @@ function inplayscenes_validate_newthread(&$dh) {
     // EINSTELLUNGEN
     $inplay_forum = $mybb->settings['inplayscenes_inplayarea'];
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
+    
+    if (empty($inplay_forum) || empty($sideplays_forum)) return;
 
     // zurück, wenn es nicht der Inplay Bereich ist
     $inplayforums = $inplay_forum.",".$sideplays_forum;
@@ -2195,6 +2197,8 @@ function inplayscenes_validate_editpost(&$dh) {
     $inplay_archive = $mybb->settings['inplayscenes_archive'];
     $sideplays_forum = $mybb->settings['inplayscenes_sideplays'];
     $sideplays_archive = $mybb->settings['inplayscenes_sideplays_archive'];
+
+    if (empty($inplay_forum) || empty($inplay_archive) || empty($sideplays_forum) || empty($sideplays_archive)) return;
 
     // zurück, wenn es nicht der Inplay Bereich ist
     $inplayforums = $inplay_forum.",".$inplay_archive.",".$sideplays_forum.",".$sideplays_archive;
