@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.5",
+		"version"	=> "1.0.6",
 		"compatibility" => "18*"
 	);
 }
@@ -1953,10 +1953,14 @@ function inplayscenes_do_newthread() {
         $thread = get_thread($tid);
 
         $playername_setting = $mybb->settings['inplayscenes_playername'];
-        if (is_numeric($playername_setting)) {
-            $playername_fid = "fid".$playername_setting;
+        if (!empty($playername_setting)) {
+            if (is_numeric($playername_setting)) {
+                $playername_fid = "fid".$playername_setting;
+            } else {
+                $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+            }
         } else {
-            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+            $playername_fid = "";
         }
 
         // MyAlerts möglich
@@ -1985,10 +1989,14 @@ function inplayscenes_do_newthread() {
                     }
 
                 } else { // PN
-                    if (is_numeric($playername_setting)) {
-                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    if (!empty($playername_setting)) {
+                        if (is_numeric($playername_setting)) {
+                            $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                        } else {
+                            $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                        }
                     } else {
-                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                        $playername = "";
                     }
                     if (!empty($playername)) {
                         $Playername = $playername;
@@ -2027,10 +2035,15 @@ function inplayscenes_do_newthread() {
 
             // Jedem Partner
             foreach ($characters_uids as $CharaUid) {
-                if (is_numeric($playername_setting)) {
-                    $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                  
+                if (!empty($playername_setting)) {
+                    if (is_numeric($playername_setting)) {
+                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    } else {
+                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
                 } else {
-                    $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    $playername = "";
                 }
                 if (!empty($playername)) {
                     $Playername = $playername;
@@ -2385,10 +2398,14 @@ function inplayscenes_do_newreply() {
         }
 
         $playername_setting = $mybb->settings['inplayscenes_playername'];
-        if (is_numeric($playername_setting)) {
-            $playername_fid = "fid".$playername_setting;
+        if (!empty($playername_setting)) {
+            if (is_numeric($playername_setting)) {
+                $playername_fid = "fid".$playername_setting;
+            } else {
+                $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+            }
         } else {
-            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+            $playername_fid = "";
         }
 
         // MyAlerts möglich
@@ -2417,10 +2434,14 @@ function inplayscenes_do_newreply() {
                     }
 
                 } else { // PN
-                    if (is_numeric($playername_setting)) {
-                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    if (!empty($playername_setting)) {
+                        if (is_numeric($playername_setting)) {
+                            $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                        } else {
+                            $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                        }
                     } else {
-                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                        $playername = "";
                     }
                     if (!empty($playername)) {
                         $Playername = $playername;
@@ -2459,10 +2480,15 @@ function inplayscenes_do_newreply() {
 
             // Jedem Partner
             foreach ($characters_uids as $CharaUid) {
-                if (is_numeric($playername_setting)) {
-                    $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+        
+                if (!empty($playername_setting)) {
+                    if (is_numeric($playername_setting)) {
+                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    } else {
+                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
                 } else {
-                    $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    $playername = "";
                 }
                 if (!empty($playername)) {
                     $Playername = $playername;
@@ -4125,10 +4151,14 @@ function inplayscenes_misc() {
 
     // SPIELERNAME
     // wenn Zahl => klassisches Profilfeld
-    if (is_numeric($playername_setting)) {
-        $playername_fid = "fid".$playername_setting;
+    if (!empty($playername_setting)) {
+        if (is_numeric($playername_setting)) {
+            $playername_fid = "fid".$playername_setting;
+        } else {
+            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        }
     } else {
-        $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        $playername_fid = "";
     }
     
     // ACCOUNTSWITCHER
@@ -4321,10 +4351,14 @@ function inplayscenes_misc() {
                 $nextUID = $next['uid'];
                 $nextUsername = $next['username'];
     
-                if (is_numeric($playername_setting)) {
-                    $nextPlayername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$nextUID."'"), $playername_fid);
+                if (!empty($playername_setting)) {
+                    if (is_numeric($playername_setting)) {
+                        $nextPlayername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$nextUID."'"), $playername_fid);
+                    } else {
+                        $nextPlayername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$nextUID."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
                 } else {
-                    $nextPlayername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$nextUID."' AND fieldid = '".$playername_fid."'"), "value");
+                    $nextPlayername = $next['username'];
                 }
         
                 if ($nextUID == $charaID) {
@@ -4480,14 +4514,14 @@ function inplayscenes_misc() {
             } else {
                 $scenetype_select = "-1";
             }
-            $scenetype_multipage = "&scenetype=".$scenetype;
+            $scenetype_multipage = "&scenetype=".$scenetype_select;
 
             // Szeneneinstellung-Filter
-            if ($scenetype == '0') { // private Szene
+            if ($scenetype_select == '0') { // private Szene
                 $where[] = "i.scenetype = 0";
-            } elseif ($scenetype == '1') { // nach Absprache
+            } elseif ($scenetype_select == '1') { // nach Absprache
                 $where[] = "i.scenetype = 1";
-            } elseif ($scenetype == '2') { // öffentliche Szene
+            } elseif ($scenetype_select == '2') { // öffentliche Szene
                 $where[] = "i.scenetype = 2";
             }
 
@@ -4497,6 +4531,18 @@ function inplayscenes_misc() {
             $scenetype_input = "";
             $scenetype_filter = "";
             $scenetype_multipage = "";
+        }
+
+        if (!empty($playername_setting)) {
+            if (!empty($mybb->get_input('playername'))) {
+                $playername = $db->escape_string($mybb->get_input('playername'));
+            } else {
+                $playername = "";
+            }
+            eval("\$player_filter = \"".$templates->get("inplayscenes_overview_player_filter")."\";");
+        } else {
+            $player_filter = ""; 
+            $playername = "";
         }
 
         if (!empty($mybb->get_input('scenestatus'))) {
@@ -4518,11 +4564,6 @@ function inplayscenes_misc() {
             $charactername = $db->escape_string($mybb->get_input('charactername'));
         } else {
             $charactername = "";
-        }
-        if (!empty($mybb->get_input('playername'))) {
-            $playername = $db->escape_string($mybb->get_input('playername'));
-        } else {
-            $playername = "";
         }
 
         // Basis-Arrays für die Kombinationen
@@ -5159,10 +5200,14 @@ function inplayscenes_misc() {
         $thread = get_thread($tid);
 
         $playername_setting = $mybb->settings['inplayscenes_playername'];
-        if (is_numeric($playername_setting)) {
-            $playername_fid = "fid".$playername_setting;
+        if (!empty($playername_setting)) {
+            if (is_numeric($playername_setting)) {
+                $playername_fid = "fid".$playername_setting;
+            } else {
+                $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+            }
         } else {
-            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+            $playername_fid = "";
         }
         // MyAlerts möglich
         if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
@@ -5189,11 +5234,15 @@ function inplayscenes_misc() {
                         }
                     }
 
-                } else { // PN                    
-                    if (is_numeric($playername_setting)) {
-                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                } else { // PN      
+                    if (!empty($playername_setting)) {
+                        if (is_numeric($playername_setting)) {
+                            $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                        } else {
+                            $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                        }
                     } else {
-                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                        $playername = "";
                     }
                     if (!empty($playername)) {
                         $Playername = $playername;
@@ -5231,11 +5280,15 @@ function inplayscenes_misc() {
         } else { // PN ausschließlich
 
             // Jedem Partner
-            foreach ($characters_uids as $CharaUid) {              
-                if (is_numeric($playername_setting)) {
-                    $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+            foreach ($characters_uids as $CharaUid) { 
+                if (!empty($playername_setting)) {
+                    if (is_numeric($playername_setting)) {
+                        $playername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$CharaUid."'"), $playername_fid);
+                    } else {
+                        $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    }
                 } else {
-                    $playername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$CharaUid."' AND fieldid = '".$playername_fid."'"), "value");
+                    $playername = "";
                 }
                 if (!empty($playername)) {
                     $Playername = $playername;
@@ -6549,16 +6602,20 @@ function inplayscenes_playername_autocompled(){
     // $logfile = MYBB_ROOT . "my_custom_log.txt";
     // file_put_contents($logfile, 'Action: ' . $mybb->input['from_page'] .' & '. $mybb->input['selectField']);
 
-    if ($mybb->input['selectField'] !== '#playername' || $mybb->input['from_page'] !== 'all_inplayscenes') {
+    if (empty($mybb->settings['inplayscenes_playername']) && ($mybb->input['selectField'] !== '#playername' || $mybb->input['from_page'] !== 'all_inplayscenes')) {
         return;
     }
 
     // EINSTELLUNGEN
     $playername_setting = $mybb->settings['inplayscenes_playername'];
-    if (is_numeric($playername_setting)) {
-        $playername_fid = "fid".$playername_setting;
+    if (!empty($playername_setting)) {
+        if (is_numeric($playername_setting)) {
+            $playername_fid = "fid".$playername_setting;
+        } else {
+            $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        }
     } else {
-        $playername_fid = $db->fetch_field($db->simple_select("application_ucp_fields", "id", "fieldname = '".$playername_setting."'"), "id");
+        $playername_fid = "";
     }
 
     if (my_strlen($mybb->input['query']) < 2) {
@@ -7788,12 +7845,7 @@ function inplayscenes_templates($mode = '') {
 								</div>
 							</div>
 
-							<div class="inplayscenes_overview-filter-row">
-								<div class="tcat">{$lang->inplayscenes_overview_filter_player}</div>
-								<div class="inplayscenes_overview-filter-input">
-								<input type="text" class="textbox" name="playername" id="playername" value="{$playername}" />
-								</div>
-							</div>
+							{$player_filter}
 							
 						</div>
 
@@ -7887,6 +7939,19 @@ function inplayscenes_templates($mode = '') {
 		}
         });
         </script>'),
+        'sid'		=> '-2',
+        'version'	=> '',
+        'dateline'	=> TIME_NOW
+    );
+
+    $templates[] = array(
+        'title'		=> 'inplayscenes_overview_player_filter',
+        'template'	=> $db->escape_string('<div class="inplayscenes_overview-filter-row">
+        <div class="tcat">{$lang->inplayscenes_overview_filter_player}</div>
+        <div class="inplayscenes_overview-filter-input">
+        <input type="text" class="textbox" name="playername" id="playername" value="{$playername}" />
+        </div>
+        </div>'),
         'sid'		=> '-2',
         'version'	=> '',
         'dateline'	=> TIME_NOW
