@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.6",
+		"version"	=> "1.0.5",
 		"compatibility" => "18*"
 	);
 }
@@ -8737,8 +8737,11 @@ function inplayscenes_is_updated(){
 
     global $db, $mybb;
 
-    if(isset($mybb->settings['inplayscenes_scenesedit'])){
-        return true;
+    $template = $db->fetch_field($db->simple_select("templates", "tid", "title = 'inplayscenes_overview_player_filter'"),"tid");
+
+    if (!$template) {
+        return false;
     }
-    return false;
+    
+    return true;
 }
