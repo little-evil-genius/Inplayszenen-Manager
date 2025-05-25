@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.5",
+		"version"	=> "1.0.5.1",
 		"compatibility" => "18*"
 	);
 }
