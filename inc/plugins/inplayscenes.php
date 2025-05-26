@@ -6602,7 +6602,7 @@ function inplayscenes_playername_autocompled(){
     // $logfile = MYBB_ROOT . "my_custom_log.txt";
     // file_put_contents($logfile, 'Action: ' . $mybb->input['from_page'] .' & '. $mybb->input['selectField']);
 
-    if (empty($mybb->settings['inplayscenes_playername']) && ($mybb->input['selectField'] !== '#playername' || $mybb->input['from_page'] !== 'all_inplayscenes')) {
+    if ($mybb->input['selectField'] !== '#playername' || $mybb->input['from_page'] !== 'all_inplayscenes') {
         return;
     }
 
