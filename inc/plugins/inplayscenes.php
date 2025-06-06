@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.6",
+		"version"	=> "1.0.7",
 		"compatibility" => "18*"
 	);
 }
@@ -546,7 +546,7 @@ function inplayscenes_admin_manage() {
                 if(empty($mybb->get_input('description'))) {
                     $errors[] = $lang->inplayscenes_error_description;
                 }
-                if(($mybb->get_input('fieldtype') == "select" AND $mybb->get_input('fieldtype') == "multiselect" AND $mybb->get_input('fieldtype') == "radio" AND $mybb->get_input('fieldtype') == "checkbox") AND empty($mybb->get_input('selectoptions'))) {
+                if (in_array($mybb->get_input('fieldtype'), ["select", "multiselect", "radio", "checkbox"]) && empty($mybb->get_input('selectoptions'))) {
                     $errors[] = $lang->inplayscenes_error_selectoptions;
                 }
 
@@ -576,7 +576,7 @@ function inplayscenes_admin_manage() {
                     );
                     $ifid = $db->insert_query("inplayscenes_fields", $insert_inplayscenesfield);
 
-                    if ($mybb->get_input('type') == "date") {
+                    if ($mybb->get_input('fieldtype') == "date") {
                         $fieldtype = "DATE";
                     } else  {
                         $fieldtype = "TEXT";
@@ -724,7 +724,7 @@ function inplayscenes_admin_manage() {
                 if(empty($mybb->get_input('description'))) {
                     $errors[] = $lang->inplayscenes_error_description;
                 }
-                if(($mybb->get_input('fieldtype') == "select" AND $mybb->get_input('fieldtype') == "multiselect" AND $mybb->get_input('fieldtype') == "radio" AND $mybb->get_input('fieldtype') == "checkbox") AND empty($mybb->get_input('selectoptions'))) {
+                if (in_array($mybb->get_input('fieldtype'), ["select", "multiselect", "radio", "checkbox"]) && empty($mybb->get_input('selectoptions'))) {
                     $errors[] = $lang->inplayscenes_error_selectoptions;
                 }
 
