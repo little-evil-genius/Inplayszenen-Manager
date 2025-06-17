@@ -1769,6 +1769,7 @@ function inplayscenes_newthread_start() {
     } else {
         $hidetype_select = "";
         $hideprofile_select = "";
+        $inplayscenes_fields_hide_desc = "";
     }
 
     if ($trigger_setting == 1) { 
