@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.7",
+		"version"	=> "1.0.8",
 		"compatibility" => "18*"
 	);
 }
@@ -1624,6 +1624,35 @@ function inplayscenes_admin_update_plugin(&$table) {
 
         // Datenbanktabellen & Felder
         inplayscenes_database();
+
+        // Collation prüfen und korrigieren
+        $charset = 'utf8mb4';
+        $collation = 'utf8mb4_unicode_ci';
+
+        $collation_string = $db->build_create_table_collation();
+        if (preg_match('/CHARACTER SET ([^\s]+)\s+COLLATE ([^\s]+)/i', $collation_string, $matches)) {
+            $charset = $matches[1];
+            $collation = $matches[2];
+        }
+
+        $databaseTables = [
+            "inplayscenes",
+            "inplayscenes_fields"
+        ];
+
+        foreach ($databaseTables as $databaseTable) {
+            if ($db->table_exists($databaseTable)) {
+                $table = TABLE_PREFIX.$databaseTable;
+
+                $query = $db->query("SHOW TABLE STATUS LIKE '".$db->escape_string($table)."'");
+                $table_status = $db->fetch_array($query);
+                $actual_collation = strtolower($table_status['Collation'] ?? '');
+
+                if (!empty($collation) && $actual_collation !== strtolower($collation)) {
+                    $db->query("ALTER TABLE {$table} CONVERT TO CHARACTER SET {$charset} COLLATE {$collation}");
+                }
+            }
+        }
 
         flash_message($lang->plugins_flash, "success");
         admin_redirect("index.php?module=rpgstuff-plugin_updates");
@@ -7132,7 +7161,7 @@ function inplayscenes_database() {
             PRIMARY KEY(`isid`),
             KEY `isid` (`isid`)
             )
-            ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+            ENGINE=InnoDB ".$db->build_create_table_collation().";
         ");
     }
     // Inplayszenen Felder
@@ -7154,7 +7183,7 @@ function inplayscenes_database() {
             PRIMARY KEY(`ifid`),
             KEY `ifid` (`ifid`)
             )
-            ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci AUTO_INCREMENT=1
+            ENGINE=InnoDB ".$db->build_create_table_collation().";
         ");
     }
 
@@ -8736,13 +8765,44 @@ function inplayscenes_stylesheet_update() {
 // UPDATE CHECK
 function inplayscenes_is_updated(){
 
-    global $db, $mybb;
-
-    $template = $db->fetch_field($db->simple_select("templates", "tid", "title = 'inplayscenes_overview_player_filter'"),"tid");
-
-    if (!$template) {
-        return false;
-    }
     
+    global $db;
+
+    // Charset & Collation dynamisch extrahieren
+    $charset = 'utf8mb4';
+    $collation = 'utf8mb4_unicode_ci';
+
+    $collation_string = $db->build_create_table_collation();
+    if (preg_match('/CHARACTER SET ([^\s]+)\s+COLLATE ([^\s]+)/i', $collation_string, $matches)) {
+        $charset = strtolower($matches[1]);
+        $collation = strtolower($matches[2]);
+    }
+
+    $databaseTables = [
+        "inplayscenes",
+        "inplayscenes_fields"
+    ];
+
+    foreach ($databaseTables as $table_name) {
+        if (!$db->table_exists($table_name)) {
+            return false;
+        }
+
+        $full_table_name = TABLE_PREFIX . $table_name;
+
+        // Charset + Collation prüfen via information_schema
+        $query = $db->query("
+            SELECT TABLE_COLLATION 
+            FROM information_schema.TABLES 
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '".$db->escape_string($full_table_name)."'
+        ");
+        $result = $db->fetch_array($query);
+        $actual_collation = strtolower($result['TABLE_COLLATION'] ?? '');
+
+        if ($actual_collation !== $collation) {
+            return false;
+        }
+    }
+
     return true;
 }
