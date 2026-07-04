@@ -76,7 +76,7 @@ function inplayscenes_info(){
 		"website"	=> "https://github.com/little-evil-genius/Inplayszenen-Manager",
 		"author"	=> "little.evil.genius",
 		"authorsite"	=> "https://storming-gates.de/member.php?action=profile&uid=1712",
-		"version"	=> "1.0.8",
+		"version"	=> "1.0.9",
 		"compatibility" => "18*"
 	);
 }
@@ -4371,45 +4371,51 @@ function inplayscenes_misc() {
                 eval("\$scene_infos = \"" . $templates->get("inplayscenes_user_scene_infos") . "\";");
     
                 // WER IST DRAN
-                $key = array_search($scene['lastposteruid'], $partneruids);
-                $key = $key + 1;
+                if ($scene['postorder'] == 1) {
+                    $key = array_search($scene['lastposteruid'], $partneruids);
+                    $key = $key + 1;
         
-                if(!isset($partneruids[$key])) {
-                    $nextChara = $partneruids[0];
-                } else {
-                    $nextChara = $partneruids[$key];
-                }
-        
-                $next = get_user($nextChara);
-                $nextUID = $next['uid'];
-                $nextUsername = $next['username'];
-    
-                if (!empty($playername_setting)) {
-                    if (is_numeric($playername_setting)) {
-                        $nextPlayername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$nextUID."'"), $playername_fid);
+                    if(!isset($partneruids[$key])) {
+                        $nextChara = $partneruids[0];
                     } else {
-                        $nextPlayername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$nextUID."' AND fieldid = '".$playername_fid."'"), "value");
+                        $nextChara = $partneruids[$key];
                     }
-                } else {
-                    $nextPlayername = $next['username'];
-                }
         
-                if ($nextUID == $charaID) {
-                    $isnext = $lang->inplayscenes_next_you;
-                    $scene_open++;
-                    $all_scenes_character_open++;
-                } else {
-                    if ($nextuser_setting == 1) {
-                        $isnext = $lang->inplayscenes_next;
-                    } elseif ($nextuser_setting == 2) {
-                        if (!empty($nextPlayername)) {
-                            $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextPlayername);
+                    $next = get_user($nextChara);
+                    $nextUID = $next['uid'];            
+                    $nextUsername = $next['username'];
+            
+                    if (!empty($playername_setting)) {
+                        if (is_numeric($playername_setting)) {
+                            $nextPlayername = $db->fetch_field($db->simple_select("userfields", $playername_fid ,"ufid = '".$nextUID."'"), $playername_fid);
+                        } else {
+                            $nextPlayername = $db->fetch_field($db->simple_select("application_ucp_userfields", "value", "uid = '".$nextUID."' AND fieldid = '".$playername_fid."'"), "value");
+                        }
+                    } else {
+                        $nextPlayername = $next['username'];
+                    }
+        
+                    if ($nextUID == $charaID) {
+                        $isnext = $lang->inplayscenes_next_you;
+                        $scene_open++;
+                        $all_scenes_character_open++;
+                    } else {
+                        if ($nextuser_setting == 1) {
+                            $isnext = $lang->inplayscenes_next;
+                        } elseif ($nextuser_setting == 2) {
+                            if (!empty($nextPlayername)) {
+                                $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextPlayername);
+                            } else {
+                                $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextUsername);
+                            }
                         } else {
                             $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextUsername);
                         }
-                    } else {
-                        $isnext = $lang->sprintf($lang->inplayscenes_next_playername, $nextUsername);
                     }
+                } else {
+                    $isnext = $lang->inplayscenes_postorder_none;
+                    $scene_open++;
+                    $all_scenes_character_open++;
                 }
     
                 $lastpostdate = my_date('relative', $scene['lastpost']);
@@ -8812,4 +8818,3 @@ function inplayscenes_is_updated(){
 
     return true;
 }
-
